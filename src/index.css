@@ -1,0 +1,113 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-display: "Outfit", "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+:root,
+[data-theme="charcoal-amber"] {
+  color-scheme: dark;
+  --bg-canvas: #0d0d10;
+  --bg-surface: #141418;
+  --bg-elevated: #1c1c22;
+  --bg-input: #101014;
+  --bg-hover: #23232b;
+  --text-primary: #f4f4f5;
+  --text-secondary: #b4b4be;
+  --text-muted: #787885;
+  --border-hairline: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(245, 158, 11, 0.32);
+  --accent-primary: #d97706;
+  --accent-primary-hover: #b45309;
+  --accent-primary-ink: #0b0b0d;
+  --accent-secondary: #f59e0b;
+  --status-success: #22c55e;
+  --status-warning: #f59e0b;
+  --status-error: #ef4444;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg-canvas: #f5f5f4;
+  --bg-surface: #ffffff;
+  --bg-elevated: #ecebe8;
+  --bg-input: #ffffff;
+  --bg-hover: #e7e5e4;
+  --text-primary: #18181b;
+  --text-secondary: #3f3f46;
+  --text-muted: #71717a;
+  --border-hairline: rgba(24, 24, 27, 0.12);
+  --border-strong: rgba(180, 83, 9, 0.34);
+  --accent-primary: #b45309;
+  --accent-primary-hover: #92400e;
+  --accent-primary-ink: #ffffff;
+  --accent-secondary: #b45309;
+  --status-success: #16a34a;
+  --status-warning: #d97706;
+  --status-error: #dc2626;
+}
+
+html,
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono-tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtle charcoal grunge grain overlay (static, zero flicker) */
+.grunge-backdrop {
+  background-image:
+    radial-gradient(circle at 18% 12%, rgba(217, 119, 6, 0.06), transparent 42%),
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: auto, 44px 44px, 44px 44px;
+}
+
+.surface-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-hairline);
+}
+
+.surface-elevated {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-hairline);
+}
+
+.btn-amber-primary {
+  background-color: var(--accent-primary);
+  color: var(--accent-primary-ink);
+  transition: background-color 150ms ease, opacity 150ms ease, transform 150ms ease;
+}
+
+.btn-amber-primary:hover:not(:disabled) {
+  background-color: var(--accent-primary-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

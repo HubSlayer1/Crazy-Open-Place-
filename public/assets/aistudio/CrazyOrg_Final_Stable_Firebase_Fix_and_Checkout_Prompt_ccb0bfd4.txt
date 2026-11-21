@@ -1,0 +1,375 @@
+CRAZY.ORG ALL IN ONE — FINAL STABLE-PROJECT REPAIR & CHECKOUT PROMPT
+For Google AI Studio Build Mode — use in the EXISTING project
+
+READ THIS ENTIRE INSTRUCTION BEFORE EDITING. This instruction supersedes the previously attached Cloudflare D1 / Workers / Cloud SQL migration instructions. The old migration plan is CANCELLED.
+
+============================================================
+1. PRIMARY DECISION — PRESERVE THE LAST WORKING WEBSITE
+============================================================
+
+Project: Crazy.Org All in One
+Existing site: https://crazylimitedorg.ai.studio/
+Platform: Google AI Studio Build Mode
+Existing working architecture: React frontend + Node.js/server.ts backend + the project's already-provisioned Google AI Studio Firebase Authentication and Cloud Firestore.
+
+I decided to STOP database migration experiments. My previous Firebase-based website and its default data were working. Keep that existing architecture and repair only the problems listed in this document.
+
+DO NOT:
+- Migrate to Cloudflare D1 or Cloudflare Workers.
+- Set up Cloud SQL or another database.
+- Add Supabase, Neon, external database services or another backend.
+- Remove Firebase Authentication or Firestore.
+- Create a new Firebase project or database.
+- Change the Firebase project ID or named database.
+- Enable Cloud Billing, upgrade to Blaze, or add paid services.
+- Ask me to use Termux, a terminal, Wrangler, CLI commands, or manually create cloud resources.
+- Rebuild the website from scratch.
+- redesign/restructure working pages or remove existing default data.
+
+Keep the existing Firebase project and database already connected to this app. The project previously reported:
+- Firebase project ID: utopian-robot-8c70r
+- Firestore database ID: ai-studio-vespermonochrome-78076f70-ef38-4705-8de9-32670d1a65e9
+
+First inspect the CURRENT project files and version history. If incomplete Cloudflare/Cloud SQL experiments were added after the last known-good Firebase version, restore only the affected application code/configuration to the last working Firebase-based checkpoint. Preserve the current user data and Firebase records. Do not delete the Firebase project or database. Do not restore an old code version in a way that overwrites newer Firestore data.
+
+Keep the existing default packages, provider settings, orders, customer data, histories and admin configuration. Do not reseed over custom data or overwrite existing records.
+
+============================================================
+2. SCOPE — ONLY FIX THE REQUESTED ISSUES
+============================================================
+
+The priorities are:
+A. Fix the real Firestore permission error on the order timeline.
+B. Fix customer checkout so normal customers can see the payment/provider option after entering all required details.
+C. Keep order creation, provider handoff, payment-reference submission, activation instructions and order tracking working.
+D. Preserve the existing Crazy.Org interface, branding, routes and all utilities.
+E. Make only small, consistent UI improvements where needed to make checkout and tracking clear. Do not perform a wholesale redesign or change unrelated pages.
+
+Do not rewrite working application code unnecessarily. Inspect, reproduce, patch, test and report.
+
+============================================================
+3. BUG #1 — EXACT FIRESTORE TIMELINE PERMISSION ERROR
+============================================================
+
+The published website produced this error for a signed-in customer:
+
+{"error":"Missing or insufficient permissions.","authInfo":{"userId":"WF1ktggIA9O37PiWyXwbi9Hlp6l2","email":"rasinpro319@gmail.com","emailVerified":true,"isAnonymous":false,"providerInfo":[{"providerId":"google.com","email":"rasinpro319@gmail.com"}]},"operationType":"list","path":"orders/SER-20261118-G55V/timeline"}
+
+Meaning:
+- Firebase Authentication succeeded.
+- The user is authenticated and email-verified.
+- The failed operation is Firestore LIST on the nested timeline collection.
+- This is a Firestore Security Rules / ownership / query-path problem, not a Gmail login failure.
+
+Required investigation:
+1. Inspect the actual order document `orders/SER-20261118-G55V` in the existing Firestore database.
+2. Find the actual owner field used by the application. Do not guess its name. It may be `customerUid`, `userId`, `ownerUid`, or another existing field.
+3. Verify whether the order's owner UID equals `WF1ktggIA9O37PiWyXwbi9Hlp6l2`.
+4. Inspect the existing `firestore.rules` and existing `isAdmin()` / admin allowlist helper.
+5. Inspect the exact frontend code that reads `orders/{orderId}/timeline` and confirm it uses the correct existing Firestore instance, database ID and path.
+6. Reproduce both GET and LIST behavior with the actual order owner.
+
+Firestore rules do not automatically cascade from a parent document to a subcollection. Add a specific nested match for timeline reads while preserving all existing parent order rules and admin restrictions.
+
+Use the following as a CONCEPTUAL PATCH only. Integrate it into the existing rules, retain the existing `isAdmin()` helper, and replace `ACTUAL_OWNER_FIELD` with the real owner field discovered in the existing order document:
+
+```javascript
+function isOrderOwner(orderId) {
+  return request.auth != null
+    && exists(/databases/$(database)/documents/orders/$(orderId))
+    && get(/databases/$(database)/documents/orders/$(orderId)).data.ACTUAL_OWNER_FIELD == request.auth.uid;
+}
+
+match /orders/{orderId}/timeline/{eventId} {
+  allow get, list: if isAdmin() || isOrderOwner(orderId);
+  // Do not allow customers to create, edit or delete audit/timeline events.
+  // Preserve the existing authorized admin/backend write policy.
+}
+```
+
+Do not paste the placeholder `ACTUAL_OWNER_FIELD` literally. Use the real field. If the current application uses a different ownership model, implement the equivalent secure owner check based on the actual schema. If the parent order is missing or has no valid owner, deny access and repair the original order-creation path; never grant access by email or by hardcoding this customer's UID.
+
+Important: Firestore rules are not filters. Ensure the actual timeline LIST query is compatible with the rule. Do not fix this by making all orders or all timelines readable to every authenticated user.
+
+Required security behavior:
+- The real owner can GET and LIST their own timeline.
+- Another customer cannot read or list that timeline.
+- Unauthenticated visitors cannot read private timelines.
+- Authorized admins retain their existing authorized access.
+- Customers cannot write fake payment confirmations, admin notes, timeline events, activation verification or audit events.
+
+Deploy the actual updated Firestore rules using the existing Google AI Studio/Firebase integration. Editing the local rules file without deploying it is not a completed fix.
+
+============================================================
+4. BUG #2 — PAYMENT OPTION VISIBLE TO ADMIN BUT NOT CUSTOMERS
+============================================================
+
+Reported behavior:
+- Admin can see payment/provider configuration in the Admin Console.
+- A normal registered customer fills the Guild Glory checkout form.
+- After customer details and order review, the customer does not see the provider payment option / next step.
+
+Inspect and compare the admin settings path and the customer checkout read path. Check:
+- Exact Firestore document path and database instance.
+- Field names and object shape.
+- Whether the customer component checks `isAdmin` accidentally.
+- Whether the checkout hides the payment panel while auth is still loading.
+- Whether the customer reads a private admin-only document.
+- Whether a settings document is missing or not seeded.
+- Whether a Firestore query is being used where a direct document read is appropriate.
+- Whether a read is rejected and silently replaced by an empty array.
+
+Do not expose private provider credentials or admin-only settings to customers.
+
+If current admin settings are private, create or repair a separate customer-safe public configuration document, for example:
+`publicStorefront/checkout`
+
+It may contain ONLY customer-safe fields such as:
+- storefront enabled/disabled;
+- provider display name;
+- official provider URL;
+- customer payment/activation instructions;
+- enabled public payment option labels;
+- support contact details;
+- public notice/refund text.
+
+It must NOT contain API keys, secrets, private transaction data, admin credentials, internal notes or customer information.
+
+Admin save workflow:
+1. Admin edits the existing provider/store configuration.
+2. Validate the private settings server-side / through existing admin permissions.
+3. Publish a whitelist of customer-safe fields to `publicStorefront/checkout`.
+4. Keep private settings private.
+5. Do not overwrite current package prices, existing settings or default records unexpectedly.
+
+Firestore public config rules should permit direct GET of the single safe document, not collection listing or public writes. Conceptual example:
+
+```javascript
+match /publicStorefront/{documentId} {
+  allow get: if documentId == "checkout";
+  allow list: if false;
+  allow create, update, delete: if isAdmin();
+}
+```
+
+Integrate with the existing rules and helper names. Ensure only the safe projection is stored at this public path. Never copy the full private `guildSettings/main` document to a public document.
+
+Customer checkout must read the exact public document using a direct `getDoc()` operation, not an admin-only collection query. If optional configuration cannot load, show a clear non-sensitive warning and still display the safe official provider handoff described below.
+
+============================================================
+5. OFFICIAL PROVIDER HANDOFF — REAL, NOT FAKE
+============================================================
+
+Use exactly this provider:
+https://www.ffglory.pro/
+
+Do not replace it with a similarly named domain.
+Do not invent checkout URLs, parameters, webhooks, payment status endpoints, redeem codes or API capabilities.
+Do not buy or require the provider's paid API.
+
+The customer-facing payment page must always display a visible option such as:
+
+“Continue to official FFGlory website”
+
+The button opens `https://www.ffglory.pro/` in a new tab while keeping the Crazy.Org order open. Add a normal link fallback in case the popup is blocked.
+
+Only display additional payment methods if the existing admin configuration identifies real methods that are actually supported and the customer can use them. Do not invent bKash, Nagad, Binance Pay, card or other payment choices.
+
+Clearly explain that payment is processed on the provider's website and that returning to Crazy.Org does not itself prove payment.
+
+============================================================
+6. COMPLETE CUSTOMER FLOW — KEEP EXISTING ROUTES WHERE POSSIBLE
+============================================================
+
+Preserve existing routes and adapt only where required:
+
+1. `/` — existing Crazy.Org homepage and utilities.
+2. `/topup/ff-guild-glory` — Guild Glory product/package page.
+3. `/checkout/ff-guild-glory` — collect required order details.
+4. `/checkout/ff-guild-glory/review` — review package, Guild ID, region, contact and total price.
+5. `/orders/:orderId/provider-payment` — show internal order information and the official FFGlory handoff button.
+6. Customer opens `https://www.ffglory.pro/` in another tab and completes the provider's actual process.
+7. `/orders/:orderId/provider-return` — customer submits real provider transaction references if required.
+8. `/orders/:orderId/activate` — show actual provider activation instructions and official link.
+9. `/orders/:orderId/tracking` — show verified order status and timeline.
+10. `/account/orders` — retain existing customer order access for signed-in users.
+11. `/admin` — retain existing protected Admin Console.
+
+Keep the existing internal order ID format and all already-created order records. Do not create duplicate orders when a page is refreshed or a customer double-clicks Continue.
+
+Order creation must:
+- require valid package and Guild ID/region fields;
+- take price and bot quantity from the current active package document, not a client-supplied price;
+- store a package/price snapshot on the order;
+- store the correct owner UID for authenticated users;
+- set the correct initial payment/service states;
+- create the initial timeline record using the authorized existing write mechanism;
+- preserve idempotency;
+- never mark payment as confirmed automatically without real verification.
+
+============================================================
+7. NO-EMAIL ORDER TRACKING — OPTIONAL, WITHOUT BREAKING EXISTING LOGIN
+============================================================
+
+Keep existing Google Sign-In available for customers who already use it. Do not remove or break existing accounts in this repair.
+
+Add an easy “Track an order without email” option if it can be implemented safely with the existing free Firebase setup:
+- order number + a separate high-entropy private tracking code;
+- generate the code using a cryptographically secure random generator;
+- show it once after order creation and let the customer copy/save it;
+- never use the order number alone as authentication;
+- store only a secure hash of the tracking code;
+- allow the code to retrieve only a minimal public status projection, never private customer, payment, admin or redeem-code data;
+- rate-limit guesses and use a constant-time comparison in a trusted server path where applicable.
+
+If Firebase Anonymous Authentication is already available or can be enabled through the existing AI Studio-managed integration without billing, it may be used as an optional guest session. Do not require SMS OTP or paid authentication. Do not make anonymous-auth availability a blocker for fixing the current Google-authenticated timeline error.
+
+Do not replace the existing login system in this targeted repair. Do not delete user records. Do not automatically merge guest and Google accounts.
+
+============================================================
+8. CUSTOMER-FACING PAYMENT PAGE FALLBACK
+============================================================
+
+The provider button must not disappear because a nonessential Firestore setting read fails.
+
+Use a safe code constant as fallback:
+`https://www.ffglory.pro/`
+
+The customer payment page should always render:
+- order reference;
+- selected package and quantity;
+- Guild ID and region;
+- store price and currency;
+- provider name;
+- real payment/activation instructions;
+- “Continue to official FFGlory website” button;
+- copy order reference button;
+- link back to order tracking.
+
+If public settings are missing, show:
+“Provider instructions are temporarily unavailable. You can still open the official provider website. Your order is not marked as paid until verified.”
+
+Do not show a fake successful payment state or fabricate payment options.
+
+============================================================
+9. ADMIN VERIFICATION AND STATUS TRACKING
+============================================================
+
+Preserve the existing Admin Console and its current admin allowlist/security.
+
+Admin can:
+- view pending provider payment submissions;
+- verify the actual provider transaction in the provider's official account;
+- record provider transaction reference;
+- mark payment confirmed only after verification;
+- record genuine provider group ID / activation evidence;
+- update service status;
+- add public customer-safe timeline messages;
+- process refund requests according to the actual provider/store policy;
+- view immutable admin audit history.
+
+Customers can read their own order timeline but cannot write admin-controlled status events.
+
+Never claim real-time live Glory tracking if no authorized integration exists. Show the last verified status and timestamp instead.
+
+============================================================
+10. PRESERVE THE EXISTING CRAZY.ORG SITE AND DATA
+============================================================
+
+Do not change unrelated pages, route names, branding, settings or defaults.
+Keep all existing features intact:
+- Homepage.
+- Speed Test.
+- Free Fire UID Checker.
+- Network Info.
+- Network Quality.
+- History.
+- Appearance.
+- Settings.
+- Contact.
+- Info.
+- Guild Glory storefront.
+- Customer dashboard.
+- Admin Console.
+- Refund system.
+- Support desk.
+- Existing packages, settings, orders and histories.
+
+Keep `FREEFIRE_API_KEY` only for the existing Free Fire UID Checker if that feature needs it. It is not a Guild Glory API key. Do not make it a requirement for Guild Glory checkout.
+
+UI scope: preserve the current working site design and layout. Make only targeted, consistent improvements to checkout/payment/tracking clarity. The desired look remains clean, professional, easy to understand, aesthetic and cyber-inspired; do not rebuild or radically rearrange the whole website.
+
+============================================================
+11. FREE-ONLY AND NO NEW INFRASTRUCTURE
+============================================================
+
+Keep the currently working Google AI Studio + Firebase Starter Tier arrangement.
+Do not add Cloudflare, D1, Workers, Cloud SQL, Supabase, Neon or any external database.
+Do not add Cloud Storage, paid uploads, SMS OTP, paid payment gateways or paid API services.
+Do not enable billing or upgrade a plan.
+Do not require Termux, terminal commands, Wrangler or manual secret creation for this repair.
+
+Do not remove Firebase from the active project. Do not create a new Firebase project. Do not change the named Firestore database.
+
+============================================================
+12. TEST THE EXACT ERROR AND CUSTOMER FLOW BEFORE CLAIMING SUCCESS
+============================================================
+
+Use the existing Firestore Emulator / Rules Playground / supported AI Studio Firebase rules test tools if available. Also verify the actual deployed rules and published app.
+
+Required timeline tests:
+A. Original order owner UID `WF1ktggIA9O37PiWyXwbi9Hlp6l2` reads and lists `orders/SER-20261118-G55V/timeline` — PASS expected.
+B. A different authenticated customer reads/lists the same timeline — DENY expected.
+C. Unauthenticated visitor reads/lists the private timeline — DENY expected.
+D. Authorized admin accesses timeline — PASS expected.
+E. Customer attempts to create/edit/delete admin-controlled timeline events — DENY expected.
+
+If the example order no longer exists, create a clearly labelled test order with the same ownership pattern and report that fact; do not fabricate a pass for a nonexistent record.
+
+Payment visibility tests:
+1. Sign in with a normal non-admin customer account.
+2. Load active packages.
+3. Submit valid Guild ID, region and contact details.
+4. Create an order.
+5. Load the payment page.
+6. Confirm the customer sees the provider card and official FFGlory button.
+7. Click it and verify the destination is exactly `https://www.ffglory.pro/`.
+8. Confirm the internal order remains available in the original tab.
+9. Submit a provider transaction reference.
+10. Confirm it enters review, not automatic payment success.
+11. Admin verifies it and the correct customer sees the updated timeline.
+
+Also test:
+- missing public configuration;
+- Firestore permission-denied handling;
+- auth loading delay;
+- order duplicate prevention;
+- package disabled state;
+- invalid Guild ID;
+- wrong-customer access;
+- mobile layout;
+- existing utilities and history.
+
+Run the project's real build, TypeScript checks and lint commands. Fix reproduced errors. Check browser console and runtime logs. Do not hide errors with empty arrays or dummy data.
+
+============================================================
+13. FINAL RESPONSE REQUIRED FROM THE AI
+============================================================
+
+After implementation, report only truthful results:
+- exact root cause of the timeline permission error;
+- actual owner field discovered;
+- exact Firestore rule change made;
+- confirmation that rules were deployed, not just edited;
+- test results for owner / other customer / admin / unauthenticated access;
+- exact payment configuration read path;
+- confirmation normal customer can see provider option;
+- confirmation official provider button opens the correct URL;
+- confirmation no paid infrastructure was added;
+- build/lint results;
+- any remaining limitation or action that genuinely requires me.
+
+Use PASS / FAIL / NOT TESTED. Never mark a test PASS without running it.
+
+FINAL COMMAND:
+STOP ALL DATABASE MIGRATION EXPERIMENTS. KEEP THE ORIGINAL FIREBASE-BASED WORKING WEBSITE AND DEFAULT DATA. FIX THE EXACT TIMELINE PERMISSION ERROR AND CUSTOMER PAYMENT OPTION VISIBILITY. PRESERVE ALL EXISTING FEATURES. DO NOT REBUILD, REDESIGN UNRELATED PAGES, CHANGE DATABASES, ADD PAID SERVICES OR INTRODUCE NEW INFRASTRUCTURE. REPRODUCE, PATCH, DEPLOY RULES, TEST WITH A NORMAL CUSTOMER, TEST ADMIN ACCESS, RUN THE BUILD, AND VERIFY THE PUBLISHED SITE.

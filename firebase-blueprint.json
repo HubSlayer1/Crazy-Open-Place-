@@ -1,0 +1,610 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Authenticated administrator profile.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "email": { "type": "string", "format": "email", "maxLength": 254 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "photoURL": { "type": "string", "maxLength": 512 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "createdAt", "updatedAt"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Authorized administrator registry document.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "email": { "type": "string", "format": "email", "maxLength": 254 },
+        "role": { "type": "string", "enum": ["admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role", "createdAt"]
+    },
+    "GuildPackage": {
+      "title": "GuildPackage",
+      "description": "FF Guild Glory package configuration displayed on the storefront.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "slug": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "botQuantity": { "type": "number" },
+        "priceAmount": { "type": "number" },
+        "currency": { "type": "string", "minLength": 1, "maxLength": 16 },
+        "durationLabel": { "type": "string", "maxLength": 160 },
+        "supportedRegions": { "type": "array" },
+        "description": { "type": "string", "maxLength": 2000 },
+        "instructions": { "type": "string", "maxLength": 2000 },
+        "warnings": { "type": "string", "maxLength": 2000 },
+        "refundNote": { "type": "string", "maxLength": 2000 },
+        "providerPriceNote": { "type": "string", "maxLength": 500 },
+        "estimatedDelivery": { "type": "string", "maxLength": 240 },
+        "enabled": { "type": "boolean" },
+        "sortOrder": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "name",
+        "botQuantity",
+        "priceAmount",
+        "currency",
+        "supportedRegions",
+        "enabled",
+        "sortOrder",
+        "updatedAt"
+      ]
+    },
+    "GuildSettings": {
+      "title": "GuildSettings",
+      "description": "Private admin configuration for Guild Glory & FFGlory provider.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "enum": ["main"] },
+        "providerName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "providerHomepage": { "type": "string", "maxLength": 120 },
+        "providerTrackingUrl": { "type": "string", "maxLength": 120 },
+        "currency": { "type": "string", "minLength": 1, "maxLength": 16 },
+        "supportedHandoffMethod": { "type": "string", "maxLength": 300 },
+        "providerTransactionFieldsNote": { "type": "string", "maxLength": 1000 },
+        "serviceInstructions": { "type": "string", "maxLength": 4000 },
+        "paymentInstructions": { "type": "string", "maxLength": 4000 },
+        "importantWarnings": { "type": "string", "maxLength": 4000 },
+        "refundConditions": { "type": "string", "maxLength": 4000 },
+        "supportWhatsapp": { "type": "string", "maxLength": 64 },
+        "supportEmail": { "type": "string", "maxLength": 254 },
+        "supportHours": { "type": "string", "maxLength": 120 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "providerName",
+        "providerHomepage",
+        "currency",
+        "serviceInstructions",
+        "paymentInstructions",
+        "importantWarnings",
+        "refundConditions",
+        "updatedAt"
+      ]
+    },
+    "PublicStorefrontCheckout": {
+      "title": "PublicStorefrontCheckout",
+      "description": "Customer-safe whitelist projection of storefront checkout & official FFGlory provider handoff instructions.",
+      "type": "object",
+      "properties": {
+        "storefrontEnabled": { "type": "boolean" },
+        "providerName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "providerUrl": { "type": "string", "maxLength": 120 },
+        "currency": { "type": "string", "minLength": 1, "maxLength": 16 },
+        "paymentInstructions": { "type": "string", "maxLength": 4000 },
+        "serviceInstructions": { "type": "string", "maxLength": 4000 },
+        "importantWarnings": { "type": "string", "maxLength": 4000 },
+        "refundConditions": { "type": "string", "maxLength": 4000 },
+        "providerTransactionFieldsNote": { "type": "string", "maxLength": 1000 },
+        "enabledPaymentLabels": { "type": "array" },
+        "supportWhatsapp": { "type": "string", "maxLength": 64 },
+        "supportEmail": { "type": "string", "maxLength": 254 },
+        "supportHours": { "type": "string", "maxLength": 120 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "storefrontEnabled",
+        "providerName",
+        "providerUrl",
+        "currency",
+        "paymentInstructions",
+        "serviceInstructions",
+        "importantWarnings",
+        "refundConditions",
+        "updatedAt"
+      ]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Guild Glory order protected by admin isolation and 256-bit trackingHash capability.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "orderReference": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "customerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "customerEmail": { "type": "string", "maxLength": 254 },
+        "idempotencyKey": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "packageId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "packageName": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "botQuantity": { "type": "number" },
+        "quantityMultiplier": { "type": "number" },
+        "totalBots": { "type": "number" },
+        "unitPrice": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "currency": { "type": "string", "minLength": 1, "maxLength": 16 },
+        "guildId": { "type": "string", "minLength": 6, "maxLength": 20 },
+        "guildName": { "type": "string", "maxLength": 100 },
+        "region": { "type": "string", "minLength": 1, "maxLength": 20 },
+        "whatsapp": { "type": "string", "minLength": 0, "maxLength": 32 },
+        "providerName": { "type": "string", "maxLength": 80 },
+        "providerUrl": { "type": "string", "maxLength": 120 },
+        "paymentStatus": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "maxLength": 64 },
+        "trackingHash": { "type": "string", "minLength": 64, "maxLength": 64 },
+        "lastProofId": { "type": "string", "maxLength": 128 },
+        "providerTransactionId": { "type": "string", "maxLength": 120 },
+        "binanceOrderId": { "type": "string", "maxLength": 120 },
+        "providerAccountUsername": { "type": "string", "maxLength": 120 },
+        "paymentProofUrl": { "type": "string", "maxLength": 512 },
+        "paymentSubmittedAt": { "type": "string", "format": "date-time" },
+        "paymentVerifiedAt": { "type": "string", "format": "date-time" },
+        "paymentVerifiedBy": { "type": "string", "maxLength": 254 },
+        "paymentAdminNote": { "type": "string", "maxLength": 1000 },
+        "providerGroupId": { "type": "string", "maxLength": 120 },
+        "activationTransactionRef": { "type": "string", "maxLength": 120 },
+        "customerActivationStatus": { "type": "string", "maxLength": 64 },
+        "redeemCode": { "type": "string", "maxLength": 120 },
+        "activationProofUrl": { "type": "string", "maxLength": 512 },
+        "activationSubmittedAt": { "type": "string", "format": "date-time" },
+        "activationVerifiedAt": { "type": "string", "format": "date-time" },
+        "activationVerifiedBy": { "type": "string", "maxLength": 254 },
+        "activationAdminNote": { "type": "string", "maxLength": 1000 },
+        "legacyCustomerRef": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "orderReference",
+        "customerId",
+        "idempotencyKey",
+        "packageId",
+        "packageName",
+        "botQuantity",
+        "quantityMultiplier",
+        "totalBots",
+        "unitPrice",
+        "totalAmount",
+        "currency",
+        "guildId",
+        "region",
+        "whatsapp",
+        "providerName",
+        "providerUrl",
+        "status",
+        "trackingHash",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "OrderTimelineEvent": {
+      "title": "OrderTimelineEvent",
+      "description": "Immutable timestamped status/audit entry under orders/{orderId}/timeline.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "customerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "trackingHash": { "type": "string", "maxLength": 128 },
+        "proofId": { "type": "string", "maxLength": 128 },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "previousStatus": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "actorRole": { "type": "string", "enum": ["system", "customer", "admin"] },
+        "actorLabel": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "note": { "type": "string", "maxLength": 2000 }
+      },
+      "required": ["id", "timestamp", "status", "actorRole", "actorLabel", "title", "note"]
+    },
+    "OrderPinView": {
+      "title": "OrderPinView",
+      "description": "Cross-device PIN-hash capability view of an order keyed by SHA-256(orderReference:normalizedPin).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "orderReference": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "trackingHash": { "type": "string", "minLength": 64, "maxLength": 64 },
+        "packageId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "packageName": { "type": "string", "maxLength": 160 },
+        "botQuantity": { "type": "number" },
+        "quantityMultiplier": { "type": "number" },
+        "totalBots": { "type": "number" },
+        "unitPrice": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "currency": { "type": "string", "maxLength": 16 },
+        "guildId": { "type": "string", "minLength": 6, "maxLength": 20 },
+        "guildName": { "type": "string", "maxLength": 100 },
+        "region": { "type": "string", "maxLength": 20 },
+        "whatsapp": { "type": "string", "maxLength": 32 },
+        "providerName": { "type": "string", "maxLength": 80 },
+        "providerUrl": { "type": "string", "maxLength": 120 },
+        "paymentStatus": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "maxLength": 64 },
+        "providerTransactionId": { "type": "string", "maxLength": 120 },
+        "binanceOrderId": { "type": "string", "maxLength": 120 },
+        "providerAccountUsername": { "type": "string", "maxLength": 120 },
+        "paymentProofUrl": { "type": "string", "maxLength": 512 },
+        "paymentSubmittedAt": { "type": "string", "format": "date-time" },
+        "paymentVerifiedAt": { "type": "string", "format": "date-time" },
+        "paymentAdminNote": { "type": "string", "maxLength": 1000 },
+        "providerGroupId": { "type": "string", "maxLength": 120 },
+        "activationTransactionRef": { "type": "string", "maxLength": 120 },
+        "customerActivationStatus": { "type": "string", "maxLength": 64 },
+        "redeemCode": { "type": "string", "maxLength": 120 },
+        "activationProofUrl": { "type": "string", "maxLength": 512 },
+        "activationSubmittedAt": { "type": "string", "format": "date-time" },
+        "activationVerifiedAt": { "type": "string", "format": "date-time" },
+        "activationAdminNote": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "orderReference",
+        "trackingHash",
+        "packageId",
+        "packageName",
+        "botQuantity",
+        "quantityMultiplier",
+        "totalBots",
+        "unitPrice",
+        "totalAmount",
+        "currency",
+        "guildId",
+        "region",
+        "whatsapp",
+        "providerName",
+        "providerUrl",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "OrderPinProof": {
+      "title": "OrderPinProof",
+      "description": "Single-use capability proof created in atomic batch with order mutations.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "orderId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "trackingHash": { "type": "string", "minLength": 64, "maxLength": 64 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "orderId", "trackingHash", "createdAt"]
+    },
+    "ProviderTxLock": {
+      "title": "ProviderTxLock",
+      "description": "Atomic uniqueness lock preventing replay of FFGlory transaction IDs across orders.",
+      "type": "object",
+      "properties": {
+        "txKey": { "type": "string", "minLength": 3, "maxLength": 128 },
+        "rawTxId": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "orderId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "customerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "trackingHash": { "type": "string", "minLength": 64, "maxLength": 64 },
+        "proofId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["txKey", "rawTxId", "orderId", "customerId", "createdAt"]
+    },
+    "PublicOrderTracking": {
+      "title": "PublicOrderTracking",
+      "description": "Minimal zero-PII order status projection keyed by SHA-256(orderReference:trackingCode).",
+      "type": "object",
+      "properties": {
+        "orderReference": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "packageName": { "type": "string", "maxLength": 160 },
+        "totalBots": { "type": "number" },
+        "status": { "type": "string", "maxLength": 64 },
+        "providerName": { "type": "string", "maxLength": 80 },
+        "providerUrl": { "type": "string", "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "orderReference",
+        "packageName",
+        "totalBots",
+        "status",
+        "providerName",
+        "providerUrl",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "RefundRequest": {
+      "title": "RefundRequest",
+      "description": "Customer refund claim & admin resolution record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "orderId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "customerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "trackingHash": { "type": "string", "maxLength": 128 },
+        "proofId": { "type": "string", "maxLength": 128 },
+        "providerTransactionRef": { "type": "string", "maxLength": 120 },
+        "providerGroupRef": { "type": "string", "maxLength": 120 },
+        "ranOver30MinZeroGlory": { "type": "boolean" },
+        "runningMinutesObserved": { "type": "number" },
+        "failureExplanation": { "type": "string", "minLength": 10, "maxLength": 2000 },
+        "status": { "type": "string", "enum": ["PENDING_REVIEW", "APPROVED", "REJECTED", "RESOLVED"] },
+        "providerRefundResult": { "type": "string", "maxLength": 64 },
+        "customerRefundResult": { "type": "string", "maxLength": 64 },
+        "refundAmountLabel": { "type": "string", "maxLength": 120 },
+        "adminResolutionNote": { "type": "string", "maxLength": 2000 },
+        "reviewedBy": { "type": "string", "maxLength": 254 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "orderId",
+        "customerId",
+        "ranOver30MinZeroGlory",
+        "runningMinutesObserved",
+        "failureExplanation",
+        "status",
+        "providerRefundResult",
+        "customerRefundResult",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "RefundHistoryEntry": {
+      "title": "RefundHistoryEntry",
+      "description": "Immutable refund review audit log entry under refunds/{refundId}/history.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "maxLength": 64 },
+        "actor": { "type": "string", "maxLength": 160 },
+        "note": { "type": "string", "maxLength": 2000 }
+      },
+      "required": ["id", "timestamp", "status", "actor", "note"]
+    },
+    "RedeemCode": {
+      "title": "RedeemCode",
+      "description": "Admin-managed vault of genuine FFGlory redeem codes.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "code": { "type": "string", "minLength": 4, "maxLength": 120 },
+        "packageName": { "type": "string", "maxLength": 160 },
+        "assignedOrderId": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["AVAILABLE", "ASSIGNED", "DELIVERED"] },
+        "note": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "assignedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "code", "status", "createdAt"]
+    },
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "description": "Customer support ticket linked to an order.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "orderId": { "type": "string", "maxLength": 128 },
+        "customerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "trackingHash": { "type": "string", "maxLength": 128 },
+        "proofId": { "type": "string", "maxLength": 128 },
+        "category": { "type": "string", "enum": ["SUPPORT", "PAYMENT_ISSUE", "SERVICE_ISSUE"] },
+        "subject": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "message": { "type": "string", "minLength": 10, "maxLength": 2000 },
+        "status": { "type": "string", "enum": ["OPEN", "IN_PROGRESS", "RESOLVED"] },
+        "adminReply": { "type": "string", "maxLength": 2000 },
+        "reviewedBy": { "type": "string", "maxLength": 254 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "customerId",
+        "category",
+        "subject",
+        "message",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ContactMessage": {
+      "title": "ContactMessage",
+      "description": "General Contact Us inquiry.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "customerId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "contact": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "subject": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "message": { "type": "string", "minLength": 10, "maxLength": 2000 },
+        "status": { "type": "string", "enum": ["OPEN", "IN_PROGRESS", "RESOLVED"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "contact", "subject", "message", "status", "createdAt"]
+    },
+    "AdminActionLog": {
+      "title": "AdminActionLog",
+      "description": "Immutable administrator audit log entry.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "adminEmail": { "type": "string", "maxLength": 254 },
+        "action": { "type": "string", "maxLength": 120 },
+        "targetId": { "type": "string", "maxLength": 128 },
+        "details": { "type": "string", "maxLength": 2000 }
+      },
+      "required": ["id", "timestamp", "adminEmail", "action", "targetId", "details"]
+    },
+    "SpeedTestRecord": {
+      "title": "SpeedTestRecord",
+      "description": "Admin-scoped cloud speed test record (guest tests cached locally).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "mode": { "type": "string", "enum": ["quick", "standard", "full"] },
+        "downloadBps": { "type": "number" },
+        "uploadBps": { "type": "number" },
+        "latencyMs": { "type": "number" },
+        "jitterMs": { "type": "number" },
+        "downLoadedLatencyMs": { "type": "number" },
+        "upLoadedLatencyMs": { "type": "number" },
+        "packetLoss": { "type": "number" },
+        "packetLossSupported": { "type": "boolean" },
+        "totalDurationMs": { "type": "number" },
+        "scores": { "type": "object" },
+        "ispOrColo": { "type": "string", "maxLength": 120 }
+      },
+      "required": ["id", "ownerUid", "createdAt", "mode"]
+    },
+    "UidLookupRecord": {
+      "title": "UidLookupRecord",
+      "description": "Admin-scoped cloud UID lookup record (guest lookups cached locally).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "uid": { "type": "string", "minLength": 4, "maxLength": 32 },
+        "region": { "type": "string", "maxLength": 20 },
+        "queriedAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["success", "error"] },
+        "nickname": { "type": "string", "maxLength": 120 },
+        "level": { "type": "number" },
+        "likes": { "type": "number" },
+        "resolvedRegion": { "type": "string", "maxLength": 20 },
+        "providerName": { "type": "string", "maxLength": 120 },
+        "errorMessage": { "type": "string", "maxLength": 500 },
+        "profile": { "type": "object" }
+      },
+      "required": ["id", "ownerUid", "uid", "region", "queriedAt", "status"]
+    },
+    "ConnectionTest": {
+      "title": "ConnectionTest",
+      "description": "Read-only connection health probe document.",
+      "type": "object",
+      "properties": {
+        "ok": { "type": "boolean" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Authenticated admin user profile documents."
+    },
+    "/admins/{uid}": {
+      "schema": { "$ref": "#/entities/Admin" },
+      "description": "Explicit admin allowlist documents."
+    },
+    "/guildPackages/{packageId}": {
+      "schema": { "$ref": "#/entities/GuildPackage" },
+      "description": "Storefront Guild Glory packages; enabled items publicly readable, all managed by admin."
+    },
+    "/guildSettings/{settingId}": {
+      "schema": { "$ref": "#/entities/GuildSettings" },
+      "description": "Private admin settings document (main)."
+    },
+    "/publicStorefront/{documentId}": {
+      "schema": { "$ref": "#/entities/PublicStorefrontCheckout" },
+      "description": "Customer-safe public checkout projection at /publicStorefront/checkout."
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Private orders indexed by orderReference (SER-YYYYMMDD-XXXX), readable by admin only; customer updates require secret trackingHash proof."
+    },
+    "/orders/{orderId}/timeline/{eventId}": {
+      "schema": { "$ref": "#/entities/OrderTimelineEvent" },
+      "description": "Timestamped timeline events under /orders/{orderId} readable by admin; customer append verified via secret trackingHash proof."
+    },
+    "/orderPinViews/{lookupHash}": {
+      "schema": { "$ref": "#/entities/OrderPinView" },
+      "description": "Cross-device PIN capability projection keyed by SHA-256(orderReference:normalizedPin)."
+    },
+    "/orderPinViews/{lookupHash}/proofs/{proofId}": {
+      "schema": { "$ref": "#/entities/OrderPinProof" },
+      "description": "Single-use capability proofs bound to secret lookupHash."
+    },
+    "/orderPinViews/{lookupHash}/timeline/{eventId}": {
+      "schema": { "$ref": "#/entities/OrderTimelineEvent" },
+      "description": "Customer PIN-accessible timeline events keyed by trackingHash."
+    },
+    "/orderPinViews/{lookupHash}/refunds/{refundId}": {
+      "schema": { "$ref": "#/entities/RefundRequest" },
+      "description": "Customer PIN-accessible refund projection keyed by trackingHash."
+    },
+    "/orderPinViews/{lookupHash}/tickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/SupportTicket" },
+      "description": "Customer PIN-accessible support ticket projection keyed by trackingHash."
+    },
+    "/providerTxLocks/{txKey}": {
+      "schema": { "$ref": "#/entities/ProviderTxLock" },
+      "description": "Transaction ID replay lock documents."
+    },
+    "/publicOrderTracking/{lookupHash}": {
+      "schema": { "$ref": "#/entities/PublicOrderTracking" },
+      "description": "Minimal status projection keyed by SHA-256(orderReference:trackingCode)."
+    },
+    "/refunds/{refundId}": {
+      "schema": { "$ref": "#/entities/RefundRequest" },
+      "description": "Admin-isolated refund requests created atomically with PIN capability proof."
+    },
+    "/refunds/{refundId}/history/{entryId}": {
+      "schema": { "$ref": "#/entities/RefundHistoryEntry" },
+      "description": "Audit trail for refund status changes."
+    },
+    "/redeemCodes/{codeId}": {
+      "schema": { "$ref": "#/entities/RedeemCode" },
+      "description": "Admin-only redeem code vault."
+    },
+    "/supportTickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/SupportTicket" },
+      "description": "Admin-isolated support tickets created atomically with PIN capability proof."
+    },
+    "/contactMessages/{msgId}": {
+      "schema": { "$ref": "#/entities/ContactMessage" },
+      "description": "Contact form inquiries."
+    },
+    "/adminActionLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AdminActionLog" },
+      "description": "Admin audit trail."
+    },
+    "/speedTests/{recordId}": {
+      "schema": { "$ref": "#/entities/SpeedTestRecord" },
+      "description": "Admin-scoped cloud speed test history."
+    },
+    "/uidLookups/{recordId}": {
+      "schema": { "$ref": "#/entities/UidLookupRecord" },
+      "description": "Admin-scoped cloud UID lookup history."
+    },
+    "/test/connection": {
+      "schema": { "$ref": "#/entities/ConnectionTest" },
+      "description": "Firestore connectivity check document."
+    }
+  }
+}

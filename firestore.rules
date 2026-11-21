@@ -1,0 +1,867 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Default-Deny Catch-All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ============================================================
+    // Global Helpers
+    // ============================================================
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (
+          request.auth.token.email == "abubakkarsiddiqueofficial@gmail.com"
+          && request.auth.token.email_verified == true
+        )
+        || exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidTrackingHash(hashId) {
+      return hashId is string && hashId.size() == 64 && hashId.matches('^[a-f0-9]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOfficialProviderUrl(url) {
+      return url is string && (
+        url == "https://www.ffglory.pro/"
+        || url == "https://www.ffglory.pro"
+        || url == "https://ffglory.pro/"
+        || url == "https://ffglory.pro"
+      );
+    }
+
+    function isOptionalHttpsUrl(val) {
+      return val is string && (val == "" || (val.size() <= 512 && val.matches('^https://.*')));
+    }
+
+    // Secret PIN capability check:
+    // Because /orders/{orderId} is NEVER readable by non-admins, an attacker cannot know
+    // resource.data.trackingHash. Proving knowledge of trackingHash requires creating a single-use
+    // proof doc at /orderPinViews/$(trackingHash)/proofs/$(proofId) inside the same atomic batch.
+    function hasOrderPinProofAfter(orderId, hashVal, proofId) {
+      return isValidId(orderId)
+        && isValidTrackingHash(hashVal)
+        && isValidId(proofId)
+        && existsAfter(/databases/$(database)/documents/orders/$(orderId))
+        && getAfter(/databases/$(database)/documents/orders/$(orderId)).data.trackingHash == hashVal
+        && !exists(/databases/$(database)/documents/orderPinViews/$(hashVal)/proofs/$(proofId))
+        && existsAfter(/databases/$(database)/documents/orderPinViews/$(hashVal)/proofs/$(proofId));
+    }
+
+    // ============================================================
+    // Entity Validation Blueprints
+    // ============================================================
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'email', 'displayName', 'photoURL', 'createdAt', 'updatedAt'])
+        && data.uid is string && data.uid == request.auth.uid && data.uid.size() <= 128
+        && (!('email' in data) || (data.email is string && data.email.size() <= 254))
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 128))
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 512))
+        && (data.createdAt is timestamp || data.createdAt is string)
+        && (data.updatedAt is timestamp || data.updatedAt is string);
+    }
+
+    function isValidPackage(data) {
+      return data.keys().hasAll([
+          'id', 'name', 'botQuantity', 'priceAmount', 'currency',
+          'supportedRegions', 'enabled', 'sortOrder', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'slug', 'name', 'botQuantity', 'priceAmount', 'currency',
+          'durationLabel', 'supportedRegions', 'description', 'instructions',
+          'warnings', 'refundNote', 'providerPriceNote', 'estimatedDelivery',
+          'enabled', 'sortOrder', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && (!('slug' in data) || (data.slug is string && data.slug.size() <= 128))
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 160
+        && data.botQuantity is number && data.botQuantity >= 1 && data.botQuantity <= 1000
+        && data.priceAmount is number && data.priceAmount > 0 && data.priceAmount <= 100000
+        && data.currency is string && data.currency.size() >= 1 && data.currency.size() <= 16
+        && data.supportedRegions is list && data.supportedRegions.size() >= 1 && data.supportedRegions.size() <= 30
+        && data.supportedRegions[0] is string
+        && data.enabled is bool
+        && data.sortOrder is number
+        && (!('durationLabel' in data) || (data.durationLabel is string && data.durationLabel.size() <= 160))
+        && (!('description' in data) || (data.description is string && data.description.size() <= 2000))
+        && (!('instructions' in data) || (data.instructions is string && data.instructions.size() <= 2000))
+        && (!('warnings' in data) || (data.warnings is string && data.warnings.size() <= 2000))
+        && (!('refundNote' in data) || (data.refundNote is string && data.refundNote.size() <= 2000))
+        && (!('providerPriceNote' in data) || (data.providerPriceNote is string && data.providerPriceNote.size() <= 500))
+        && (!('estimatedDelivery' in data) || (data.estimatedDelivery is string && data.estimatedDelivery.size() <= 240))
+        && (data.updatedAt is timestamp || data.updatedAt is string);
+    }
+
+    function isValidGuildSettings(data) {
+      return data.keys().hasAll([
+          'providerName', 'providerHomepage', 'currency',
+          'serviceInstructions', 'paymentInstructions',
+          'importantWarnings', 'refundConditions', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'providerName', 'providerHomepage', 'providerTrackingUrl',
+          'currency', 'supportedHandoffMethod', 'providerTransactionFieldsNote',
+          'serviceInstructions', 'paymentInstructions', 'importantWarnings',
+          'refundConditions', 'supportWhatsapp', 'supportEmail', 'supportHours',
+          'updatedAt'
+        ])
+        && (!('id' in data) || data.id == 'main')
+        && data.providerName is string && data.providerName.size() >= 1 && data.providerName.size() <= 80
+        && isOfficialProviderUrl(data.providerHomepage)
+        && (!('providerTrackingUrl' in data) || isOfficialProviderUrl(data.providerTrackingUrl))
+        && data.currency is string && data.currency.size() >= 1 && data.currency.size() <= 16
+        && data.serviceInstructions is string && data.serviceInstructions.size() <= 4000
+        && data.paymentInstructions is string && data.paymentInstructions.size() <= 4000
+        && data.importantWarnings is string && data.importantWarnings.size() <= 4000
+        && data.refundConditions is string && data.refundConditions.size() <= 4000
+        && (!('supportedHandoffMethod' in data) || (data.supportedHandoffMethod is string && data.supportedHandoffMethod.size() <= 300))
+        && (!('providerTransactionFieldsNote' in data) || (data.providerTransactionFieldsNote is string && data.providerTransactionFieldsNote.size() <= 1000))
+        && (!('supportWhatsapp' in data) || (data.supportWhatsapp is string && data.supportWhatsapp.size() <= 64))
+        && (!('supportEmail' in data) || (data.supportEmail is string && data.supportEmail.size() <= 254))
+        && (!('supportHours' in data) || (data.supportHours is string && data.supportHours.size() <= 120))
+        && (data.updatedAt is timestamp || data.updatedAt is string);
+    }
+
+    function isValidPublicStorefront(data) {
+      return data.keys().hasAll([
+          'storefrontEnabled', 'providerName', 'providerUrl', 'currency',
+          'paymentInstructions', 'serviceInstructions', 'importantWarnings',
+          'refundConditions', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'storefrontEnabled', 'providerName', 'providerUrl', 'currency',
+          'paymentInstructions', 'serviceInstructions', 'importantWarnings',
+          'refundConditions', 'providerTransactionFieldsNote',
+          'enabledPaymentLabels', 'supportWhatsapp', 'supportEmail',
+          'supportHours', 'updatedAt'
+        ])
+        && data.storefrontEnabled is bool
+        && data.providerName is string && data.providerName.size() >= 1 && data.providerName.size() <= 80
+        && isOfficialProviderUrl(data.providerUrl)
+        && data.currency is string && data.currency.size() >= 1 && data.currency.size() <= 16
+        && data.paymentInstructions is string && data.paymentInstructions.size() <= 4000
+        && data.serviceInstructions is string && data.serviceInstructions.size() <= 4000
+        && data.importantWarnings is string && data.importantWarnings.size() <= 4000
+        && data.refundConditions is string && data.refundConditions.size() <= 4000
+        && (!('providerTransactionFieldsNote' in data) || (data.providerTransactionFieldsNote is string && data.providerTransactionFieldsNote.size() <= 1000))
+        && (!('enabledPaymentLabels' in data) || (data.enabledPaymentLabels is list && data.enabledPaymentLabels.size() <= 10))
+        && (!('supportWhatsapp' in data) || (data.supportWhatsapp is string && data.supportWhatsapp.size() <= 64))
+        && (!('supportEmail' in data) || (data.supportEmail is string && data.supportEmail.size() <= 254))
+        && (!('supportHours' in data) || (data.supportHours is string && data.supportHours.size() <= 120))
+        && (data.updatedAt is timestamp || data.updatedAt is string);
+    }
+
+    function isValidOrderStatus(st) {
+      return st in [
+        'ORDER_CREATED',
+        'AWAITING_PROVIDER_PAYMENT',
+        'PROVIDER_PAYMENT_SUBMITTED',
+        'PROVIDER_PAYMENT_REVIEW',
+        'PAYMENT_CONFIRMED',
+        'AWAITING_ACTIVATION',
+        'PROVIDER_ACTIVATION_SUBMITTED',
+        'ACTIVATION_VERIFIED',
+        'PROCESSING',
+        'COMPLETED',
+        'FAILED',
+        'REFUND_REVIEW',
+        'REFUNDED',
+        'CANCELLED'
+      ];
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll([
+          'id', 'orderReference', 'customerId', 'idempotencyKey',
+          'packageId', 'packageName', 'botQuantity', 'quantityMultiplier',
+          'totalBots', 'unitPrice', 'totalAmount', 'currency',
+          'guildId', 'region', 'whatsapp', 'providerName', 'providerUrl',
+          'status', 'trackingHash', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'orderReference', 'customerId', 'customerEmail', 'idempotencyKey',
+          'packageId', 'packageName', 'botQuantity', 'quantityMultiplier',
+          'totalBots', 'unitPrice', 'totalAmount', 'currency',
+          'guildId', 'guildName', 'region', 'whatsapp',
+          'providerName', 'providerUrl', 'paymentStatus', 'status',
+          'trackingHash', 'lastProofId',
+          'providerTransactionId', 'binanceOrderId', 'providerAccountUsername',
+          'paymentProofUrl', 'paymentSubmittedAt', 'paymentVerifiedAt',
+          'paymentVerifiedBy', 'paymentAdminNote',
+          'providerGroupId', 'activationTransactionRef', 'customerActivationStatus',
+          'redeemCode', 'activationProofUrl', 'activationSubmittedAt',
+          'activationVerifiedAt', 'activationVerifiedBy', 'activationAdminNote',
+          'legacyCustomerRef', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && isValidId(data.orderReference)
+        && data.customerId is string && data.customerId.size() >= 1 && data.customerId.size() <= 128
+        && (!('customerEmail' in data) || (data.customerEmail is string && data.customerEmail.size() <= 254))
+        && data.idempotencyKey is string && data.idempotencyKey.size() >= 1 && data.idempotencyKey.size() <= 128
+        && isValidId(data.packageId)
+        && data.packageName is string && data.packageName.size() >= 1 && data.packageName.size() <= 160
+        && data.botQuantity is number && data.botQuantity >= 1 && data.botQuantity <= 1000
+        && data.quantityMultiplier is number && data.quantityMultiplier >= 1 && data.quantityMultiplier <= 10
+        && data.totalBots is number && data.totalBots >= 1 && data.totalBots <= 10000
+        && data.unitPrice is number && data.unitPrice > 0 && data.unitPrice <= 100000
+        && data.totalAmount is number && data.totalAmount > 0 && data.totalAmount <= 1000000
+        && data.currency is string && data.currency.size() >= 1 && data.currency.size() <= 16
+        && data.guildId is string && data.guildId.matches('^[0-9]{6,15}$')
+        && (!('guildName' in data) || (data.guildName is string && data.guildName.size() <= 100))
+        && data.region is string && data.region.size() >= 1 && data.region.size() <= 20
+        && data.whatsapp is string && data.whatsapp.size() <= 32
+        && data.providerName is string && data.providerName.size() >= 1 && data.providerName.size() <= 80
+        && isOfficialProviderUrl(data.providerUrl)
+        && (!('paymentStatus' in data) || (data.paymentStatus is string && data.paymentStatus.size() <= 64))
+        && isValidOrderStatus(data.status)
+        && isValidTrackingHash(data.trackingHash)
+        && (!('lastProofId' in data) || isValidId(data.lastProofId))
+        && (!('providerTransactionId' in data) || (data.providerTransactionId is string && data.providerTransactionId.size() <= 120))
+        && (!('binanceOrderId' in data) || (data.binanceOrderId is string && data.binanceOrderId.size() <= 120))
+        && (!('providerAccountUsername' in data) || (data.providerAccountUsername is string && data.providerAccountUsername.size() <= 120))
+        && (!('paymentProofUrl' in data) || isOptionalHttpsUrl(data.paymentProofUrl))
+        && (!('providerGroupId' in data) || (data.providerGroupId is string && data.providerGroupId.size() <= 120))
+        && (!('activationTransactionRef' in data) || (data.activationTransactionRef is string && data.activationTransactionRef.size() <= 120))
+        && (!('customerActivationStatus' in data) || (data.customerActivationStatus is string && data.customerActivationStatus.size() <= 64))
+        && (!('redeemCode' in data) || (data.redeemCode is string && data.redeemCode.size() <= 120))
+        && (!('activationProofUrl' in data) || isOptionalHttpsUrl(data.activationProofUrl))
+        && (!('paymentAdminNote' in data) || (data.paymentAdminNote is string && data.paymentAdminNote.size() <= 1000))
+        && (!('activationAdminNote' in data) || (data.activationAdminNote is string && data.activationAdminNote.size() <= 1000))
+        && (!('paymentVerifiedBy' in data) || (data.paymentVerifiedBy is string && data.paymentVerifiedBy.size() <= 254))
+        && (!('activationVerifiedBy' in data) || (data.activationVerifiedBy is string && data.activationVerifiedBy.size() <= 254))
+        && (data.createdAt is timestamp || data.createdAt is string)
+        && (data.updatedAt is timestamp || data.updatedAt is string);
+    }
+
+    function isValidTimelineEvent(data) {
+      return data.keys().hasAll([
+          'id', 'customerId', 'timestamp', 'status', 'actorRole', 'actorLabel', 'title', 'note'
+        ])
+        && data.keys().hasOnly([
+          'id', 'customerId', 'trackingHash', 'proofId', 'timestamp', 'previousStatus', 'status',
+          'actorRole', 'actorLabel', 'title', 'note'
+        ])
+        && isValidId(data.id)
+        && data.customerId is string && data.customerId.size() >= 1 && data.customerId.size() <= 128
+        && (!('trackingHash' in data) || isValidTrackingHash(data.trackingHash))
+        && (!('proofId' in data) || isValidId(data.proofId))
+        && (data.timestamp is timestamp || data.timestamp is string)
+        && (!('previousStatus' in data) || data.previousStatus == null || isValidOrderStatus(data.previousStatus))
+        && isValidOrderStatus(data.status)
+        && data.actorRole in ['system', 'customer', 'admin']
+        && data.actorLabel is string && data.actorLabel.size() >= 1 && data.actorLabel.size() <= 160
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 200
+        && data.note is string && data.note.size() <= 2000;
+    }
+
+    function isValidOrderPinView(data, lookupHash) {
+      return data.keys().hasAll([
+          'id', 'orderReference', 'trackingHash', 'packageId', 'packageName',
+          'botQuantity', 'quantityMultiplier', 'totalBots', 'unitPrice', 'totalAmount', 'currency',
+          'guildId', 'region', 'whatsapp', 'providerName', 'providerUrl', 'status',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'orderReference', 'trackingHash', 'packageId', 'packageName',
+          'botQuantity', 'quantityMultiplier', 'totalBots', 'unitPrice', 'totalAmount', 'currency',
+          'guildId', 'guildName', 'region', 'whatsapp',
+          'providerName', 'providerUrl', 'paymentStatus', 'status',
+          'providerTransactionId', 'binanceOrderId', 'providerAccountUsername',
+          'paymentProofUrl', 'paymentSubmittedAt', 'paymentVerifiedAt', 'paymentAdminNote',
+          'providerGroupId', 'activationTransactionRef', 'customerActivationStatus',
+          'redeemCode', 'activationProofUrl', 'activationSubmittedAt',
+          'activationVerifiedAt', 'activationAdminNote',
+          'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && data.orderReference == data.id
+        && data.trackingHash == lookupHash
+        && isValidId(data.packageId)
+        && data.packageName is string && data.packageName.size() <= 160
+        && data.botQuantity is number && data.botQuantity >= 1
+        && data.quantityMultiplier is number && data.quantityMultiplier >= 1
+        && data.totalBots is number && data.totalBots >= 1
+        && data.unitPrice is number && data.unitPrice > 0
+        && data.totalAmount is number && data.totalAmount > 0
+        && data.currency is string && data.currency.size() <= 16
+        && data.guildId is string && data.guildId.matches('^[0-9]{6,15}$')
+        && (!('guildName' in data) || (data.guildName is string && data.guildName.size() <= 100))
+        && data.region is string && data.region.size() <= 20
+        && data.whatsapp is string && data.whatsapp.size() <= 32
+        && data.providerName is string && data.providerName.size() <= 80
+        && isOfficialProviderUrl(data.providerUrl)
+        && (!('paymentStatus' in data) || (data.paymentStatus is string && data.paymentStatus.size() <= 64))
+        && isValidOrderStatus(data.status)
+        && (!('providerTransactionId' in data) || (data.providerTransactionId is string && data.providerTransactionId.size() <= 120))
+        && (!('binanceOrderId' in data) || (data.binanceOrderId is string && data.binanceOrderId.size() <= 120))
+        && (!('providerAccountUsername' in data) || (data.providerAccountUsername is string && data.providerAccountUsername.size() <= 120))
+        && (!('paymentProofUrl' in data) || isOptionalHttpsUrl(data.paymentProofUrl))
+        && (!('providerGroupId' in data) || (data.providerGroupId is string && data.providerGroupId.size() <= 120))
+        && (!('activationTransactionRef' in data) || (data.activationTransactionRef is string && data.activationTransactionRef.size() <= 120))
+        && (!('customerActivationStatus' in data) || (data.customerActivationStatus is string && data.customerActivationStatus.size() <= 64))
+        && (!('redeemCode' in data) || (data.redeemCode is string && data.redeemCode.size() <= 120))
+        && (!('activationProofUrl' in data) || isOptionalHttpsUrl(data.activationProofUrl))
+        && (!('paymentAdminNote' in data) || (data.paymentAdminNote is string && data.paymentAdminNote.size() <= 1000))
+        && (!('activationAdminNote' in data) || (data.activationAdminNote is string && data.activationAdminNote.size() <= 1000))
+        && (data.createdAt is timestamp || data.createdAt is string)
+        && (data.updatedAt is timestamp || data.updatedAt is string);
+    }
+
+    function isValidPinProof(data, lookupHash, proofId) {
+      return data.keys().hasAll(['id', 'orderId', 'trackingHash', 'createdAt'])
+        && data.keys().hasOnly(['id', 'orderId', 'trackingHash', 'createdAt'])
+        && data.id == proofId
+        && isValidId(data.orderId)
+        && data.trackingHash == lookupHash
+        && data.createdAt == request.time;
+    }
+
+    function isValidPublicTracking(data) {
+      return data.keys().hasAll([
+          'orderReference', 'packageName', 'totalBots', 'status',
+          'providerName', 'providerUrl', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'orderReference', 'packageName', 'totalBots', 'status',
+          'providerName', 'providerUrl', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.orderReference)
+        && data.packageName is string && data.packageName.size() <= 160
+        && data.totalBots is number && data.totalBots >= 1
+        && isValidOrderStatus(data.status)
+        && data.providerName is string && data.providerName.size() <= 80
+        && isOfficialProviderUrl(data.providerUrl)
+        && (data.createdAt is timestamp || data.createdAt is string)
+        && (data.updatedAt is timestamp || data.updatedAt is string);
+    }
+
+    function isValidRefund(data) {
+      return data.keys().hasAll([
+          'id', 'orderId', 'customerId', 'ranOver30MinZeroGlory',
+          'runningMinutesObserved', 'failureExplanation', 'status',
+          'providerRefundResult', 'customerRefundResult', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'orderId', 'customerId', 'trackingHash', 'proofId',
+          'providerTransactionRef', 'providerGroupRef',
+          'ranOver30MinZeroGlory', 'runningMinutesObserved', 'failureExplanation',
+          'status', 'providerRefundResult', 'customerRefundResult',
+          'refundAmountLabel', 'adminResolutionNote', 'reviewedBy',
+          'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && isValidId(data.orderId)
+        && data.customerId is string && data.customerId.size() <= 128
+        && (!('trackingHash' in data) || isValidTrackingHash(data.trackingHash))
+        && (!('proofId' in data) || isValidId(data.proofId))
+        && data.ranOver30MinZeroGlory is bool
+        && data.runningMinutesObserved is number && data.runningMinutesObserved >= 0 && data.runningMinutesObserved <= 10000
+        && data.failureExplanation is string && data.failureExplanation.size() >= 10 && data.failureExplanation.size() <= 2000
+        && data.status in ['PENDING_REVIEW', 'APPROVED', 'REJECTED', 'RESOLVED']
+        && data.providerRefundResult is string && data.providerRefundResult.size() <= 64
+        && data.customerRefundResult is string && data.customerRefundResult.size() <= 64
+        && (!('providerTransactionRef' in data) || (data.providerTransactionRef is string && data.providerTransactionRef.size() <= 120))
+        && (!('providerGroupRef' in data) || (data.providerGroupRef is string && data.providerGroupRef.size() <= 120))
+        && (!('refundAmountLabel' in data) || (data.refundAmountLabel is string && data.refundAmountLabel.size() <= 120))
+        && (!('adminResolutionNote' in data) || (data.adminResolutionNote is string && data.adminResolutionNote.size() <= 2000))
+        && (!('reviewedBy' in data) || (data.reviewedBy is string && data.reviewedBy.size() <= 254))
+        && (data.createdAt is timestamp || data.createdAt is string)
+        && (data.updatedAt is timestamp || data.updatedAt is string);
+    }
+
+    function isValidSupportTicket(data) {
+      return data.keys().hasAll([
+          'id', 'customerId', 'category', 'subject', 'message', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'orderId', 'customerId', 'trackingHash', 'proofId', 'category', 'subject', 'message',
+          'status', 'adminReply', 'reviewedBy', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && data.customerId is string && data.customerId.size() <= 128
+        && (!('orderId' in data) || isValidId(data.orderId))
+        && (!('trackingHash' in data) || isValidTrackingHash(data.trackingHash))
+        && (!('proofId' in data) || isValidId(data.proofId))
+        && data.category in ['SUPPORT', 'PAYMENT_ISSUE', 'SERVICE_ISSUE']
+        && data.subject is string && data.subject.size() >= 3 && data.subject.size() <= 160
+        && data.message is string && data.message.size() >= 10 && data.message.size() <= 2000
+        && data.status in ['OPEN', 'IN_PROGRESS', 'RESOLVED']
+        && (!('adminReply' in data) || (data.adminReply is string && data.adminReply.size() <= 2000))
+        && (!('reviewedBy' in data) || (data.reviewedBy is string && data.reviewedBy.size() <= 254))
+        && (data.createdAt is timestamp || data.createdAt is string)
+        && (data.updatedAt is timestamp || data.updatedAt is string);
+    }
+
+    function isValidContactMessage(data) {
+      return data.keys().hasAll(['id', 'name', 'contact', 'subject', 'message', 'status', 'createdAt'])
+        && data.keys().hasOnly(['id', 'customerId', 'name', 'contact', 'subject', 'message', 'status', 'createdAt'])
+        && isValidId(data.id)
+        && (!('customerId' in data) || (data.customerId is string && data.customerId.size() <= 128))
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 120
+        && data.contact is string && data.contact.size() >= 3 && data.contact.size() <= 160
+        && data.subject is string && data.subject.size() >= 3 && data.subject.size() <= 160
+        && data.message is string && data.message.size() >= 10 && data.message.size() <= 2000
+        && data.status in ['OPEN', 'IN_PROGRESS', 'RESOLVED']
+        && (data.createdAt is timestamp || data.createdAt is string);
+    }
+
+    function isValidSpeedTest(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'createdAt', 'mode'])
+        && data.keys().hasOnly([
+          'id', 'ownerUid', 'createdAt', 'mode', 'downloadBps', 'uploadBps',
+          'latencyMs', 'jitterMs', 'downLoadedLatencyMs', 'upLoadedLatencyMs',
+          'packetLoss', 'packetLossSupported', 'totalDurationMs', 'scores', 'ispOrColo'
+        ])
+        && isValidId(data.id)
+        && data.ownerUid == request.auth.uid
+        && data.mode in ['quick', 'standard', 'full']
+        && (data.createdAt is timestamp || data.createdAt is string);
+    }
+
+    function isValidUidLookup(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'uid', 'region', 'queriedAt', 'status'])
+        && data.keys().hasOnly([
+          'id', 'ownerUid', 'uid', 'region', 'queriedAt', 'status',
+          'nickname', 'level', 'likes', 'resolvedRegion', 'providerName',
+          'errorMessage', 'profile'
+        ])
+        && isValidId(data.id)
+        && data.ownerUid == request.auth.uid
+        && data.uid is string && data.uid.size() >= 4 && data.uid.size() <= 32
+        && data.region is string && data.region.size() <= 20
+        && data.status in ['success', 'error']
+        && (data.queriedAt is timestamp || data.queriedAt is string);
+    }
+
+    // ============================================================
+    // Collection Rules
+    // ============================================================
+
+    match /test/connection {
+      allow get: if true;
+      allow list, write: if false;
+    }
+
+    match /users/{uid} {
+      allow get: if isValidId(uid) && ((isSignedIn() && request.auth.uid == uid) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(uid) && isVerifiedUser() && request.auth.uid == uid && isValidUser(incoming());
+      allow update: if isValidId(uid) && isVerifiedUser() && request.auth.uid == uid
+        && isValidUser(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'email', 'updatedAt']);
+      allow delete: if isAdmin();
+    }
+
+    match /admins/{uid} {
+      allow get: if isValidId(uid) && (isAdmin() || (isSignedIn() && request.auth.uid == uid));
+      allow list, create, update, delete: if isAdmin();
+    }
+
+    match /guildPackages/{packageId} {
+      allow get: if isValidId(packageId) && (existing().enabled == true || isAdmin());
+      allow list: if existing().enabled == true || isAdmin();
+      allow create, update: if isValidId(packageId) && isAdmin() && isValidPackage(incoming());
+      allow delete: if isValidId(packageId) && isAdmin();
+    }
+
+    // Private Admin Store & Provider Settings
+    match /guildSettings/{settingId} {
+      allow get: if isValidId(settingId) && isAdmin();
+      allow list: if isAdmin();
+      allow create, update: if isValidId(settingId) && isAdmin() && isValidGuildSettings(incoming());
+      allow delete: if isValidId(settingId) && isAdmin();
+    }
+
+    // Customer-Safe Public Checkout Config
+    match /publicStorefront/{documentId} {
+      allow get: if documentId == "checkout";
+      allow list: if false;
+      allow create, update: if documentId == "checkout" && isAdmin() && isValidPublicStorefront(incoming());
+      allow delete: if documentId == "checkout" && isAdmin();
+    }
+
+    // Orders (Strictly admin-readable; no-login customer writes verified via unforgeable trackingHash proof)
+    match /orders/{orderId} {
+      allow get, list: if isAdmin();
+
+      allow create: if isValidId(orderId)
+        && isValidOrder(incoming())
+        && incoming().id == orderId
+        && incoming().orderReference == orderId
+        && (incoming().customerId == 'guest' || isAdmin())
+        && incoming().status == 'AWAITING_PROVIDER_PAYMENT'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/guildPackages/$(incoming().packageId))
+        && get(/databases/$(database)/documents/guildPackages/$(incoming().packageId)).data.enabled == true
+        && incoming().botQuantity == get(/databases/$(database)/documents/guildPackages/$(incoming().packageId)).data.botQuantity
+        && incoming().totalBots == incoming().botQuantity * incoming().quantityMultiplier
+        && incoming().unitPrice == get(/databases/$(database)/documents/guildPackages/$(incoming().packageId)).data.priceAmount
+        && incoming().totalAmount >= incoming().unitPrice * incoming().quantityMultiplier - 0.02
+        && incoming().totalAmount <= incoming().unitPrice * incoming().quantityMultiplier + 0.02;
+
+      allow update: if isValidId(orderId)
+        && isValidOrder(incoming())
+        && incoming().customerId == existing().customerId
+        && (
+          isAdmin()
+          || (
+            hasOrderPinProofAfter(orderId, existing().trackingHash, incoming().lastProofId)
+            && !(existing().status in ['COMPLETED', 'CANCELLED', 'REFUNDED'])
+            && incoming().updatedAt == request.time
+            && incoming().id == existing().id
+            && incoming().orderReference == existing().orderReference
+            && incoming().createdAt == existing().createdAt
+            && incoming().trackingHash == existing().trackingHash
+            && incoming().packageId == existing().packageId
+            && incoming().packageName == existing().packageName
+            && incoming().botQuantity == existing().botQuantity
+            && incoming().quantityMultiplier == existing().quantityMultiplier
+            && incoming().totalBots == existing().totalBots
+            && incoming().unitPrice == existing().unitPrice
+            && incoming().totalAmount == existing().totalAmount
+            && incoming().currency == existing().currency
+            && incoming().guildId == existing().guildId
+            && incoming().region == existing().region
+            && incoming().whatsapp == existing().whatsapp
+            && (
+              (
+                existing().status in ['ORDER_CREATED', 'AWAITING_PROVIDER_PAYMENT', 'PROVIDER_PAYMENT_SUBMITTED', 'PROVIDER_PAYMENT_REVIEW']
+                && incoming().status == 'PROVIDER_PAYMENT_REVIEW'
+                && incoming().providerTransactionId is string
+                && incoming().providerTransactionId.size() >= 3
+                && incoming().providerTransactionId.size() <= 120
+                && (!('binanceOrderId' in incoming()) || (incoming().binanceOrderId is string && incoming().binanceOrderId.size() <= 120))
+                && (!('providerAccountUsername' in incoming()) || (incoming().providerAccountUsername is string && incoming().providerAccountUsername.size() <= 120))
+                && (!('paymentProofUrl' in incoming()) || isOptionalHttpsUrl(incoming().paymentProofUrl))
+                && incoming().diff(existing()).affectedKeys().hasOnly([
+                  'status', 'paymentStatus', 'providerTransactionId', 'binanceOrderId',
+                  'providerAccountUsername', 'paymentProofUrl', 'paymentSubmittedAt', 'lastProofId', 'updatedAt'
+                ])
+              )
+              ||
+              (
+                existing().status in ['PROVIDER_PAYMENT_SUBMITTED', 'PROVIDER_PAYMENT_REVIEW', 'PAYMENT_CONFIRMED', 'AWAITING_ACTIVATION', 'PROVIDER_ACTIVATION_SUBMITTED']
+                && incoming().status == 'PROVIDER_ACTIVATION_SUBMITTED'
+                && incoming().providerGroupId is string
+                && incoming().providerGroupId.size() >= 2
+                && incoming().providerGroupId.size() <= 120
+                && (!('activationTransactionRef' in incoming()) || (incoming().activationTransactionRef is string && incoming().activationTransactionRef.size() <= 120))
+                && (!('customerActivationStatus' in incoming()) || (incoming().customerActivationStatus is string && incoming().customerActivationStatus.size() <= 64))
+                && (!('redeemCode' in incoming()) || (incoming().redeemCode is string && incoming().redeemCode.size() <= 120))
+                && (!('activationProofUrl' in incoming()) || isOptionalHttpsUrl(incoming().activationProofUrl))
+                && incoming().diff(existing()).affectedKeys().hasOnly([
+                  'status', 'providerGroupId', 'activationTransactionRef',
+                  'customerActivationStatus', 'redeemCode', 'activationProofUrl',
+                  'activationSubmittedAt', 'lastProofId', 'updatedAt'
+                ])
+              )
+              ||
+              (
+                existing().status in ['ORDER_CREATED', 'AWAITING_PROVIDER_PAYMENT']
+                && incoming().status == 'CANCELLED'
+                && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'lastProofId', 'updatedAt'])
+              )
+              ||
+              (
+                !(existing().status in ['ORDER_CREATED', 'AWAITING_PROVIDER_PAYMENT', 'CANCELLED', 'REFUNDED'])
+                && incoming().status == 'REFUND_REVIEW'
+                && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'lastProofId', 'updatedAt'])
+              )
+            )
+          )
+        );
+
+      allow delete: if isAdmin();
+
+      match /timeline/{eventId} {
+        allow get, list: if isAdmin();
+        allow create: if isValidId(eventId) && isValidTimelineEvent(incoming()) && (
+          isAdmin()
+          || (
+            incoming().timestamp == request.time
+            && (
+              (
+                incoming().actorRole == 'system'
+                && incoming().status == 'AWAITING_PROVIDER_PAYMENT'
+                && !exists(/databases/$(database)/documents/orders/$(orderId))
+                && existsAfter(/databases/$(database)/documents/orders/$(orderId))
+                && incoming().trackingHash == getAfter(/databases/$(database)/documents/orders/$(orderId)).data.trackingHash
+              )
+              || (
+                incoming().actorRole == 'customer'
+                && incoming().status in [
+                  'PROVIDER_PAYMENT_REVIEW',
+                  'PROVIDER_ACTIVATION_SUBMITTED',
+                  'CANCELLED',
+                  'REFUND_REVIEW'
+                ]
+                && hasOrderPinProofAfter(orderId, incoming().trackingHash, incoming().proofId)
+              )
+            )
+          )
+        );
+        allow update, delete: if false;
+      }
+    }
+
+    // Cross-Device No-Login PIN Capability Views (keyed by unguessable 64-char SHA-256 hash)
+    match /orderPinViews/{lookupHash} {
+      allow get: if isValidTrackingHash(lookupHash);
+      allow list: if false;
+
+      allow create: if isValidTrackingHash(lookupHash)
+        && isValidOrderPinView(incoming(), lookupHash)
+        && (
+          isAdmin()
+          || (
+            incoming().status == 'AWAITING_PROVIDER_PAYMENT'
+            && incoming().createdAt == request.time
+            && incoming().updatedAt == request.time
+            && existsAfter(/databases/$(database)/documents/orders/$(incoming().orderReference))
+            && getAfter(/databases/$(database)/documents/orders/$(incoming().orderReference)).data.trackingHash == lookupHash
+          )
+        );
+
+      allow update: if isValidTrackingHash(lookupHash)
+        && isValidOrderPinView(incoming(), lookupHash)
+        && (
+          isAdmin()
+          || (
+            incoming().orderReference == existing().orderReference
+            && incoming().createdAt == existing().createdAt
+            && incoming().updatedAt == request.time
+            && !(existing().status in ['COMPLETED', 'CANCELLED', 'REFUNDED'])
+            && incoming().status in [
+              'PROVIDER_PAYMENT_REVIEW',
+              'PROVIDER_ACTIVATION_SUBMITTED',
+              'CANCELLED',
+              'REFUND_REVIEW'
+            ]
+            && existsAfter(/databases/$(database)/documents/orders/$(existing().orderReference))
+            && getAfter(/databases/$(database)/documents/orders/$(existing().orderReference)).data.trackingHash == lookupHash
+            && getAfter(/databases/$(database)/documents/orders/$(existing().orderReference)).data.status == incoming().status
+          )
+        );
+
+      allow delete: if isAdmin();
+
+      match /proofs/{proofId} {
+        allow get, list: if isAdmin();
+        allow create: if isValidTrackingHash(lookupHash)
+          && isValidId(proofId)
+          && isValidPinProof(incoming(), lookupHash, proofId)
+          && exists(/databases/$(database)/documents/orders/$(incoming().orderId))
+          && get(/databases/$(database)/documents/orders/$(incoming().orderId)).data.trackingHash == lookupHash;
+        allow update, delete: if isAdmin();
+      }
+
+      match /timeline/{eventId} {
+        allow get: if isValidTrackingHash(lookupHash);
+        allow list: if isValidTrackingHash(lookupHash) && existing().trackingHash == lookupHash;
+        allow create: if isValidTrackingHash(lookupHash)
+          && isValidId(eventId)
+          && isValidTimelineEvent(incoming())
+          && incoming().trackingHash == lookupHash
+          && (
+            isAdmin()
+            || (
+              incoming().timestamp == request.time
+              && (
+                (
+                  incoming().actorRole == 'system'
+                  && incoming().status == 'AWAITING_PROVIDER_PAYMENT'
+                  && existsAfter(/databases/$(database)/documents/orderPinViews/$(lookupHash))
+                )
+                || (
+                  incoming().actorRole == 'customer'
+                  && incoming().status in [
+                    'PROVIDER_PAYMENT_REVIEW',
+                    'PROVIDER_ACTIVATION_SUBMITTED',
+                    'CANCELLED',
+                    'REFUND_REVIEW'
+                  ]
+                  && isValidId(incoming().proofId)
+                  && existsAfter(/databases/$(database)/documents/orderPinViews/$(lookupHash)/proofs/$(incoming().proofId))
+                )
+              )
+            )
+          );
+        allow update, delete: if false;
+      }
+
+      match /refunds/{refundId} {
+        allow get: if isValidTrackingHash(lookupHash);
+        allow list: if isValidTrackingHash(lookupHash) && existing().trackingHash == lookupHash;
+        allow create: if isValidTrackingHash(lookupHash)
+          && isValidId(refundId)
+          && isValidRefund(incoming())
+          && incoming().id == refundId
+          && incoming().trackingHash == lookupHash
+          && (
+            isAdmin()
+            || (
+              incoming().status == 'PENDING_REVIEW'
+              && incoming().providerRefundResult == 'PENDING'
+              && incoming().customerRefundResult == 'PENDING'
+              && incoming().createdAt == request.time
+              && incoming().updatedAt == request.time
+              && hasOrderPinProofAfter(incoming().orderId, lookupHash, incoming().proofId)
+            )
+          );
+        allow update: if isValidTrackingHash(lookupHash) && isAdmin() && isValidRefund(incoming());
+        allow delete: if isAdmin();
+      }
+
+      match /tickets/{ticketId} {
+        allow get: if isValidTrackingHash(lookupHash);
+        allow list: if isValidTrackingHash(lookupHash) && existing().trackingHash == lookupHash;
+        allow create: if isValidTrackingHash(lookupHash)
+          && isValidId(ticketId)
+          && isValidSupportTicket(incoming())
+          && incoming().id == ticketId
+          && incoming().trackingHash == lookupHash
+          && (
+            isAdmin()
+            || (
+              incoming().status == 'OPEN'
+              && !('adminReply' in incoming())
+              && !('reviewedBy' in incoming())
+              && incoming().createdAt == request.time
+              && incoming().updatedAt == request.time
+              && hasOrderPinProofAfter(incoming().orderId, lookupHash, incoming().proofId)
+            )
+          );
+        allow update: if isValidTrackingHash(lookupHash) && isAdmin() && isValidSupportTicket(incoming());
+        allow delete: if isAdmin();
+      }
+    }
+
+    match /providerTxLocks/{txKey} {
+      allow get, list: if isAdmin();
+      allow create: if isValidId(txKey)
+        && !exists(/databases/$(database)/documents/providerTxLocks/$(txKey))
+        && incoming().keys().hasAll(['txKey', 'rawTxId', 'orderId', 'customerId', 'trackingHash', 'proofId', 'createdAt'])
+        && incoming().keys().hasOnly(['txKey', 'rawTxId', 'orderId', 'customerId', 'trackingHash', 'proofId', 'createdAt'])
+        && incoming().txKey == txKey
+        && incoming().rawTxId is string && incoming().rawTxId.size() >= 3 && incoming().rawTxId.size() <= 120
+        && isValidId(incoming().orderId)
+        && incoming().createdAt == request.time
+        && hasOrderPinProofAfter(incoming().orderId, incoming().trackingHash, incoming().proofId);
+      allow update, delete: if isAdmin();
+    }
+
+    // Optional Minimal Status Projection (zero PII, unguessable SHA-256 hash key)
+    match /publicOrderTracking/{lookupHash} {
+      allow get: if isValidTrackingHash(lookupHash);
+      allow list: if false;
+      allow create, update: if isValidTrackingHash(lookupHash)
+        && isValidPublicTracking(incoming())
+        && (
+          isAdmin()
+          || (
+            existsAfter(/databases/$(database)/documents/orders/$(incoming().orderReference))
+            && getAfter(/databases/$(database)/documents/orders/$(incoming().orderReference)).data.trackingHash == lookupHash
+          )
+        );
+      allow delete: if isAdmin();
+    }
+
+    match /refunds/{refundId} {
+      allow get, list: if isAdmin();
+      allow create: if isValidId(refundId)
+        && isValidRefund(incoming())
+        && incoming().id == refundId
+        && (incoming().customerId == 'guest' || isAdmin())
+        && incoming().status == 'PENDING_REVIEW'
+        && incoming().providerRefundResult == 'PENDING'
+        && incoming().customerRefundResult == 'PENDING'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && hasOrderPinProofAfter(incoming().orderId, incoming().trackingHash, incoming().proofId);
+      allow update: if isValidId(refundId) && isAdmin() && isValidRefund(incoming());
+      allow delete: if isValidId(refundId) && isAdmin();
+
+      match /history/{entryId} {
+        allow get, list: if isAdmin();
+        allow create: if isValidId(entryId) && isAdmin();
+        allow update, delete: if false;
+      }
+    }
+
+    match /redeemCodes/{codeId} {
+      allow get, list, create, update, delete: if isAdmin();
+    }
+
+    match /supportTickets/{ticketId} {
+      allow get, list: if isAdmin();
+      allow create: if isValidId(ticketId)
+        && isValidSupportTicket(incoming())
+        && incoming().id == ticketId
+        && (incoming().customerId == 'guest' || isAdmin())
+        && incoming().status == 'OPEN'
+        && !('adminReply' in incoming())
+        && !('reviewedBy' in incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && hasOrderPinProofAfter(incoming().orderId, incoming().trackingHash, incoming().proofId);
+      allow update: if isValidId(ticketId) && isAdmin() && isValidSupportTicket(incoming());
+      allow delete: if isValidId(ticketId) && isAdmin();
+    }
+
+    match /contactMessages/{msgId} {
+      allow get, list, update, delete: if isAdmin();
+      allow create: if isValidId(msgId)
+        && isValidContactMessage(incoming())
+        && incoming().id == msgId
+        && incoming().status == 'OPEN';
+    }
+
+    match /adminActionLogs/{logId} {
+      allow get, list, create: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    match /speedTests/{recordId} {
+      allow get: if isValidId(recordId) && (isAdmin() || (isSignedIn() && existing().ownerUid == request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && existing().ownerUid == request.auth.uid);
+      allow create: if isValidId(recordId) && isVerifiedUser() && isValidSpeedTest(incoming()) && incoming().id == recordId;
+      allow update: if false;
+      allow delete: if isValidId(recordId) && (isAdmin() || (isSignedIn() && existing().ownerUid == request.auth.uid));
+    }
+
+    match /uidLookups/{recordId} {
+      allow get: if isValidId(recordId) && (isAdmin() || (isSignedIn() && existing().ownerUid == request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && existing().ownerUid == request.auth.uid);
+      allow create: if isValidId(recordId) && isVerifiedUser() && isValidUidLookup(incoming()) && incoming().id == recordId;
+      allow update: if false;
+      allow delete: if isValidId(recordId) && (isAdmin() || (isSignedIn() && existing().ownerUid == request.auth.uid));
+    }
+  }
+}

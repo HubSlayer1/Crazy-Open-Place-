@@ -1,0 +1,662 @@
+CRAZYOPENPLACE — COMPLETE PROJECT HANDOFF + BUILD/DEPLOY MASTER PROMPT
+For a new AI coding agent / AI website builder
+Prepared: 21 November 2026
+Project source supplied by user: untitled-nov-20-2026-2-15-06-am.zip
+
+======================================================================
+PART 0 — READ THIS FIRST: THE REAL GOAL AND NON-NEGOTIABLE CONSTRAINTS
+======================================================================
+
+I am a beginner. Explain steps simply and clearly. Do not waste time, invent facts, give hype, or make me repeat information already included here.
+
+MY GOAL:
+Create and publish my complete website, CrazyOpenPlace, at no cost if technically possible. I cannot buy subscriptions, cannot add a credit card, and do not want a paid deployment route. A free hosting subdomain such as crazyopenplace.pages.dev or a Cloudflare Workers *.workers.dev address is acceptable. I do not need to buy a custom domain now.
+
+I previously built the website in Google AI Studio Build mode. Google AI Studio generated a preview, but publishing is blocked by:
+“No Cloud Projects Available”
+“You are not eligible for the Starter Tier.”
+
+My Google account is a personal Gmail account. I have never had Google Cloud Billing. Google/Gemini explained that Starter Tier eligibility is determined by Google's systems and cannot be manually overridden. Do NOT tell me to add a card, activate paid billing, buy Cloud Run, or keep trying the same Google publishing button. Keep the Google AI Studio project as a backup/source only.
+
+I have a Cloudflare account and dashboard access. The dashboard shows:
+- Worker: square-thunder-0bf2
+- D1 database: crazyallineone12
+- Dashboard analytics currently show zero requests/invocations/errors (this may simply mean no traffic).
+I tried Cloudflare's simple dashboard uploader with my Google AI Studio ZIP and received:
+“This uploader does not yet support projects that require a build process. TypeScript files were found. Please use `wrangler deploy` instead for full feature support.”
+
+I am using Android. I originally wanted no GitHub, no Termux, and no paid third-party services. Prefer a browser-only workflow and Cloudflare dashboard wherever realistically possible. If the existing source project cannot be deployed through the dashboard uploader, do NOT pretend that it can. Explain the exact limitation and offer the least complicated genuinely free method. Do not require GitHub or Termux unless there is no feasible browser-only route; if one becomes necessary, explain why before asking me to use it.
+
+NO SUBSCRIPTION / NO CARD:
+- Do not recommend a paid tier as the solution.
+- Do not ask me to add a payment card.
+- Use genuinely free plans and free quotas only.
+- Explain limits, expiration rules, branding, and usage caps accurately.
+- Never claim “unlimited free”.
+- Do not create a paid resource or enable billing.
+- Before any action that could create charges, stop and ask me.
+
+NO WATERMARK:
+I do not want “Made with Bolt”, “Powered by…”, “Created with…”, builder branding, or other forced builder badges visible to visitors. A free platform subdomain is fine. Prefer hosting that serves the site without a builder watermark. Cloudflare Pages/Workers are preferred because they do not add an AI-builder badge to the deployed site.
+
+NO UNRELATED CHANGES:
+The website must be coherent, working and secure. Do not make fake APIs, fake player information, random values, fake payment confirmations, fake orders, fake prices, fake testimonials, or fake verification badges.
+
+======================================================================
+PART 1 — EXISTING PROJECT ZIP: INSPECTED TECHNICAL FACTS
+======================================================================
+
+The attached ZIP is the actual Google AI Studio project. It contains 56 archive entries. I inspected its package and key backend/frontend files.
+
+Project stack:
+- React 19
+- TypeScript
+- Vite 8
+- React Router 7
+- Tailwind CSS 4
+- Express 4 backend
+- @cloudflare/speedtest package
+- lucide-react icons
+- Motion library
+- @google/genai dependency
+
+Existing package.json:
+- dev: tsx server.ts
+- start: node server.ts
+- build: vite build
+- preview: vite preview
+- lint: tsc --noEmit
+
+Important files:
+- server.ts
+- vite.config.ts
+- src/config/providers.ts
+- src/services/cloudflareSpeedTest.ts
+- src/pages/HomePage.tsx
+- src/pages/UidCheckerPage.tsx
+- src/pages/WebsiteSpeedPage.tsx
+- src/pages/SpeedTestPage.tsx
+- src/pages/GuildGloryPage.tsx
+- src/pages/ThankYouPage.tsx
+- src/pages/FreeServicesPage.tsx
+- src/pages/SafetyPage.tsx
+- src/pages/AboutPage.tsx
+- src/pages/ContactPage.tsx
+- src/pages/NotFoundPage.tsx
+- server/routes/uidCheck.ts
+- server/routes/websiteSpeed.ts
+- server/services/gameskinbo.ts
+- server/middleware/rateLimit.ts
+
+Existing server.ts is a Node/Express server. It:
+- Uses dotenv.
+- Runs on process.env.PORT or 3000.
+- Serves API routes.
+- Serves Vite middleware in development.
+- Serves dist/ in production.
+- Has /api/config-status.
+- Mounts /api/uid-check and /api/website-speed/tests.
+- Has an API 404 response.
+
+IMPORTANT HOSTING COMPATIBILITY:
+The existing project is NOT a ready-to-upload static website. It needs `npm run build` to generate dist/, and its Express/Node server cannot simply be uploaded as a static Pages asset. Cloudflare Workers runtime is not a drop-in Node server. Do not copy server.ts unchanged into a Worker and claim it works.
+
+The Cloudflare uploader error is expected for the current source ZIP because it contains TypeScript and a build process. A valid deployment requires either:
+A) a build step and compatible deployment tool (for example Wrangler / supported Git build integration), OR
+B) an intentional migration to Cloudflare-native Worker code and static assets that can be deployed using a supported Cloudflare dashboard workflow.
+Do not claim that merely renaming .ts files, removing TypeScript extensions, or uploading the source ZIP solves the issue.
+
+PREFERRED PATH FOR THIS USER:
+Investigate whether a self-contained Cloudflare Worker JavaScript app can be created and pasted into the Cloudflare dashboard's Worker editor, with HTML/CSS/JS served from the Worker and API routes implemented in Worker runtime. This avoids a local build and avoids GitHub/Termux if the current Cloudflare dashboard supports editing and deploying that Worker directly.
+If a single-file Worker editor cannot reliably host the complete UI or required browser code, explain that clearly and choose the simplest verified free deployment path. Do not invent a dashboard feature.
+
+Do not modify or overwrite the existing Worker `square-thunder-0bf2` or D1 database `crazyallineone12` until inspected and I explicitly approve. Prefer creating a separate new Worker/project called `crazyopenplace` so the current resources remain safe.
+
+======================================================================
+PART 2 — WEBSITE IDENTITY AND DESIGN
+======================================================================
+
+Website name: CrazyOpenPlace
+Domain/brand text: CrazyOpenPlace@domain (domain may be added later; no purchased domain now).
+
+Visual direction:
+- Aesthetic, grunge, clean balance.
+- Professional, clean, unique.
+- Easy to understand for beginners and customers.
+- Near-black / charcoal base with restrained warm amber accent.
+- Do not make it cluttered, overly neon, childish, or full of unnecessary text.
+- Responsive on Android phones, tablets and desktop.
+- Fast loading and accessible.
+- Consistent header, sidebar, navigation, cards, typography, spacing and buttons.
+- Use simple labels and short explanations.
+
+Navigation:
+- Hamburger/sidebar navigation.
+- Contact Us link: https://www.facebook.com/share/1DnqXXosMt/
+- About page explaining what CrazyOpenPlace provides.
+- Free Services page.
+- Safety page with simple safety guidance and clear disclaimers.
+- Each service/page opens in its own route/page, not a confusing combined scroll page.
+- Keep the site easy to navigate and use on a phone.
+
+No login or signup:
+- Customers must not need CrazyOpenPlace login or signup to use services.
+- No account registration system.
+- Do not invent a customer ID unless a real feature requires it.
+- Guild Glory external provider flow specifically has NO CrazyOpenPlace order tracking, NO customer account, NO manual approval and NO payment collection.
+
+======================================================================
+PART 3 — SERVICE 1: FREE FIRE UID CHECKER (REAL GAMESKINBO API)
+======================================================================
+
+Reference pages supplied by me:
+https://gameskinbo.com/free_fire_id_checker
+https://api.gameskinbo.com/
+
+I have access to the GameSkinbo API and will provide the API key securely as a secret. Never ask me to paste it into public chat, frontend source, HTML, JavaScript delivered to the browser, GitHub public repo, or a visible configuration file.
+
+Actual API endpoint found in my existing source:
+https://api.gameskinbo.com/ff-info/get
+
+Existing backend environment variable:
+GAMESKINBO_API_KEY
+
+Existing endpoint exposed by my website:
+GET /api/uid-check?uid=NUMERIC_UID&region=BD
+
+Existing rules:
+- UID must contain digits only, 5–20 digits.
+- Supported region codes:
+  BD, IND, BR, US, SAC, NA, TH, ID, SG, PK.
+- Region can be omitted / AUTO for provider auto lookup.
+- Existing code has a 12-second timeout.
+- Existing rate limit: 5 requests per minute per client/IP (or an equivalent safe per-client limit in Worker implementation).
+- No password, OTP, login, or account credentials are ever requested.
+- Do not fabricate data if API fails or key is missing.
+- Return clear errors for missing key, invalid UID, unsupported region, unauthorized, quota exceeded, provider failure, timeout and rate limiting.
+- Do not expose upstream API key or provider response secrets.
+
+Existing source normalizes GameSkinbo data into:
+- Account information
+- Profile details
+- Guild information
+- Social profile
+- Credit score details
+It avoids sensitive key/token/password/auth/cookie/email/phone/OTP fields.
+Primary summary can include player name, level, region, likes, EXP, season ID, BR/CS rank and points, account create time and last login if returned by the API.
+Show only fields actually returned by GameSkinbo. Missing values must remain “Not available” or be omitted; never make up values.
+
+UI requirements:
+- UID input.
+- Region selector including Auto.
+- Check button with loading state.
+- Results in clean sections/cards.
+- Error and rate-limit feedback.
+- Show when the data was fetched.
+- Label it as live/provider-supplied lookup, not official Garena endorsement.
+- Include a short privacy warning: enter UID only; never enter password or OTP.
+- Must call real API through server-side proxy/Worker. Never call provider with a key embedded in frontend.
+
+Worker migration requirements:
+- Store `GAMESKINBO_API_KEY` as a Cloudflare Worker secret, not a plain text variable exposed to browser.
+- Use Worker `fetch()` to call GameSkinbo endpoint.
+- Follow the actual GameSkinbo API authentication format from the existing code/documentation. Inspect the complete existing server/services/gameskinbo.ts before implementing; do not guess whether key belongs in header/query/body.
+- Preserve existing parsing/normalization behavior from source where possible.
+- Implement server-side validation, timeout, rate limiting and safe error mapping.
+- Test with a real UID only after I configure the secret.
+- Do not show sample/fake profile as a real lookup.
+
+======================================================================
+PART 4 — SERVICE 2: CLOUDFLARE SPEED TEST (REAL MEASUREMENTS)
+======================================================================
+
+Reference pages:
+https://h3.speed.cloudflare.com/
+https://speed.cloudflare.com/
+https://dash.cloudflare.com/
+
+I want the speed test to work like Cloudflare's public speed test, embedded in my own website, with real measurements.
+
+Important distinction:
+- The public Cloudflare speed test does NOT require my Cloudflare account API token to measure a visitor's network speed.
+- The speed test uses browser-side network measurements to Cloudflare's speed-test infrastructure.
+- Do not invent or randomize download/upload/latency/jitter/packet loss.
+- Do not label a synthetic calculation as a real test.
+- Do not confuse the speed test with the separate Website Speed Analyzer (Cloudflare Observatory API).
+
+My existing source uses:
+`@cloudflare/speedtest` package in `src/services/cloudflareSpeedTest.ts`.
+
+It measures:
+- Download Mbps
+- Upload Mbps
+- Unloaded latency
+- Unloaded jitter
+- Download-loaded latency
+- Download-loaded jitter
+- Upload-loaded latency
+- Upload-loaded jitter
+- Packet loss
+- Total duration
+
+Existing source:
+- Runs in the browser.
+- Uses `SpeedTest` from `@cloudflare/speedtest`.
+- Has start, cancel, retest, progress/stage updates, finish and error callbacks.
+- Uses 14 measurement phases by default.
+- Converts bandwidth from bps to Mbps.
+- Reports packet-loss ratio as percentage.
+- Handles offline and network errors.
+- Does not need Cloudflare API token for the public speed test itself.
+
+Implementation requirements:
+- Prefer using the official `@cloudflare/speedtest` package and preserve its measurement behavior if a real build pipeline is available.
+- If building a browser-only no-build Worker page, do not pretend a package import magically works without bundling. Verify a stable, browser-compatible module delivery method (or implement a documented compatible client integration) before using it.
+- If no reliable no-build integration is possible, clearly explain that the speed test requires bundling/build and recommend the minimum required build workflow.
+- Must use real Cloudflare test endpoints and actual measurements.
+- Show clear progress and current stage.
+- Provide Start, Cancel and Retest.
+- Show actual measurement values and units.
+- Handle unsupported browser, blocked requests, offline state, cancellation and failures.
+- Never use random placeholders.
+
+======================================================================
+PART 5 — SERVICE 3: WEBSITE SPEED ANALYZER (CLOUDFLARE OBSERVATORY API)
+======================================================================
+
+Existing feature is separate from the public network speed test.
+
+Existing environment secrets:
+- CLOUDFLARE_API_TOKEN
+- CLOUDFLARE_ZONE_ID
+
+Existing endpoint:
+GET /api/website-speed/tests?url=https://example.com/
+
+Existing Cloudflare API endpoint in source:
+GET https://api.cloudflare.com/client/v4/zones/{zone_id}/speed_api/pages/{encoded_url}/tests
+
+Existing behavior:
+- Requires both CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID.
+- Uses Authorization: Bearer token.
+- 12-second timeout.
+- Rate limit: 10 requests per minute.
+- Validates the supplied URL.
+- Reads Cloudflare Observatory test history.
+- Returns at most 10 tests.
+- Displays date, region, schedule frequency, desktop performance score and mobile performance score.
+- Handles permission denied, not found/no history, timeout, API failure.
+- Never returns the token to the browser.
+
+Token permissions mentioned by existing code:
+Zone Settings Read (zone_settings:read) for the configured zone, subject to current Cloudflare API documentation and endpoint requirements.
+
+Requirements:
+- Store CLOUDFLARE_API_TOKEN as a Worker secret.
+- Store CLOUDFLARE_ZONE_ID as a Worker secret or appropriately protected Worker variable (prefer secret).
+- Never expose either in frontend JavaScript or HTML.
+- Validate URLs and ensure they belong to the configured zone; do not allow arbitrary SSRF/proxying to unrelated sites.
+- Keep the endpoint read-only.
+- If no Observatory test history exists, explain that; do not invent a score.
+- Clearly distinguish this feature from the public speed test.
+- If secrets are not configured, show a clear “not configured” state without breaking other services.
+
+======================================================================
+PART 6 — SERVICE 4: GUILD GLORY SHOP (NO SUPPLIER API)
+======================================================================
+
+Reference pages:
+Kaku Topup product:
+https://kakutopup.com/topup/49/ff-guild-glory
+FFGlory:
+https://www.ffglory.pro/login
+https://www.ffglory.pro/en/
+
+I do NOT have an FFGlory supplier API. Do not create fake supplier automation.
+
+My desired model:
+- CrazyOpenPlace displays a Guild Glory shop/catalog.
+- Customer chooses/compares external provider product destinations.
+- Customer clicks a direct product-specific provider URL.
+- Provider's own website handles package selection, Guild UID/contact details, account requirements, checkout, payment and delivery.
+- Customer may return to CrazyOpenPlace manually using browser Back or the open tab.
+- Show a short thank-you / external provider disclaimer if they return.
+- No CrazyOpenPlace payment collection.
+- No CrazyOpenPlace payment confirmation.
+- No CrazyOpenPlace manual approval.
+- No CrazyOpenPlace order tracking.
+- No CrazyOpenPlace login/signup.
+- No fake order number/customer ID/receipt.
+- No claim that CrazyOpenPlace is an official FFGlory/KakuTopup partner.
+- No guarantee of automatic redirect back; only use an official return URL if provider documents/supports it.
+
+Provider candidate destinations already configured in existing source:
+1. FFIBD Shop:
+https://ffibd.shop/topup/popular-item-1/ff-glory-bot-19
+A prior live check reported a 301 redirect to:
+https://ffibd.shop/topup/popular-item-1/ff-guild-glory-bot-19
+The source had observed BDT prices 4 IDs ৳133, 8 IDs ৳266, 12 IDs ৳398, 16 IDs ৳531 and payment methods Wallet/EPS Gateway (Card, Mobile Banking; EPS fee noted as 2%). These are historical observations from 19 Nov 2026, not guaranteed current. Re-check live checkout before displaying prices/payment methods.
+
+2. BD Games Topup:
+https://bdgamestopup.com/topup/64/guild-glory-bot
+Prior live check reported 4 Bots ৳150, 8 Bots ৳300, 12 Bots ৳450, 20 Bots ৳850, with Wallet Pay and Instant Pay. Historical observations only; re-check live.
+
+3. FF TopUp House:
+https://fftopuphouse.com/product/guild-glory-bot
+Product page candidate. Prices/payment methods load dynamically; do not invent.
+
+4. Rio Game Shop:
+https://riogameshop.com/product/guild-bot
+Product page candidate. Prices/payment methods load dynamically; do not invent.
+
+5. FFGlory:
+https://www.ffglory.pro/en/
+This is a service website, not verified as a direct product/payment-only checkout URL. Earlier automated check encountered Cloudflare JS verification. Do not label it a direct payment URL.
+
+Existing source provider configuration:
+- `src/config/providers.ts`
+- Explicit allowlist of the five URLs above.
+- Each record has provider name/domain, destination type, verification status, BDT currency, packages, notes, payment methods label, checkout note, CTA, last checked date, enabled flag.
+- Payment session verified is false.
+- Supports official return URL is false.
+- URL allowlist validation requires HTTPS, exact allowlisted URL and matching domain.
+- Existing source has a static USD reference conversion rate of 1 USD = ৳120 configured on 19 Nov 2026; this is not live. Prefer BDT only unless user explicitly wants this optional, clearly labeled estimate.
+
+Guild Glory UI:
+- Prominent featured service, not hidden.
+- Own dedicated page/route.
+- Clean compact product/provider cards.
+- Easy-to-understand package selection where package details are known.
+- BDT first.
+- Provider name and exact product URL.
+- Button says “Buy from [Provider]” or “Continue to Provider”.
+- Use only confirmed current prices/payment methods; otherwise “See current packages and payment methods at provider checkout.”
+- Make clear user leaves CrazyOpenPlace.
+- Do not imply provider endorsement/partnership.
+- Do not invent live stock, reviews, ratings, discounts, prices, package sizes, payment methods or “verified” status.
+- If a provider URL fails or is unsafe, disable only that specific link and explain.
+- Validate destinations against strict allowlist. Do not accept arbitrary redirect URLs.
+- Do not append UID, phone, credentials, tokens or guessed checkout parameters to URLs.
+
+Short external provider notice:
+“You are leaving CrazyOpenPlace. Payment and service delivery are handled by the provider. Check the final package, price, fees and payment method on the provider website before paying.”
+
+Thank-you / return notice:
+“Thank you for visiting CrazyOpenPlace. Your payment and Guild Glory service are handled directly by the external provider you selected. Keep your provider transaction reference and payment receipt. Returning to CrazyOpenPlace does not confirm payment or service completion.”
+
+======================================================================
+PART 7 — OTHER PAGES AND NAVIGATION
+======================================================================
+
+Preserve/create the following separate pages:
+- Home
+- Free Services
+- Free Fire UID Checker
+- Cloudflare Speed Test
+- Website Speed Analyzer
+- Guild Glory Shop
+- About
+- Safety
+- Contact
+- Thank You / external checkout return notice
+- Not Found
+
+Contact:
+https://www.facebook.com/share/1DnqXXosMt/
+
+About:
+Explain simply what CrazyOpenPlace provides. Clearly identify external third-party services.
+
+Safety:
+- Never ask for Free Fire password, OTP or account login.
+- UID checker needs UID only.
+- API keys remain server-side.
+- External provider payment is handled by provider, not CrazyOpenPlace.
+- Customers should verify provider URL, price, package, fees and receipt.
+- Do not imply official Garena endorsement.
+- Do not claim payment or fulfilment has been confirmed by CrazyOpenPlace.
+- Add privacy notice about data sent to providers.
+
+Each page should have its own route and should work after refresh/deep link.
+
+======================================================================
+PART 8 — SECURITY AND RELIABILITY
+======================================================================
+
+Must implement:
+- Server-side secret storage only.
+- Input validation.
+- Rate limiting.
+- Request timeouts.
+- Safe error messages.
+- CORS policy appropriate to own site.
+- Security headers where supported.
+- No arbitrary URL proxy / SSRF.
+- No API secrets in HTML, JS bundles, source maps, logs or client responses.
+- Do not log sensitive user data.
+- No unsafe redirects.
+- No fake cached responses.
+- No random generated API data.
+- No mock mode presented as real mode.
+- Avoid collecting personal data unnecessarily.
+- Use only GET for read-only lookup endpoints unless official API requires otherwise.
+- Handle 429, 401, 403, 404, 5xx and timeouts correctly.
+
+For Cloudflare Worker:
+- Use `env.GAMESKINBO_API_KEY`, `env.CLOUDFLARE_API_TOKEN`, `env.CLOUDFLARE_ZONE_ID` server-side.
+- Explain how to add each secret using Cloudflare dashboard UI if available.
+- Never ask me to paste secret values into this chat or a public prompt.
+- If dashboard secret configuration requires a particular UI path, give exact current steps and verify against official docs.
+- Do not reuse or expose credentials from the old project ZIP.
+
+D1 database:
+- Existing dashboard shows D1 database `crazyallineone12`.
+- Do not connect to it unless necessary and schema is inspected.
+- Do not delete or alter existing tables.
+- This site does not require a customer account or Guild Glory order tracking, so do not create those tables.
+- Do not store UID lookup results or user data unless required and explicitly justified.
+
+======================================================================
+PART 9 — FREE DEPLOYMENT ARCHITECTURE: PREFERRED SOLUTION
+======================================================================
+
+I want the least complicated route that works with my existing Cloudflare account and no paid subscription.
+
+Preferred:
+Cloudflare Worker with static assets / single Worker app:
+- Public site UI served from Cloudflare.
+- Worker API endpoints:
+  GET /api/config-status
+  GET /api/uid-check
+  GET /api/website-speed/tests
+- Client-side public Cloudflare speed test.
+- External Guild Glory product links.
+- Static routes for the pages.
+- Free workers.dev address if available.
+- No builder watermark.
+- No paid domain.
+
+However, do not assume the existing Express server can run unchanged in Workers.
+
+Investigate and implement a Cloudflare-native version using APIs supported by Workers runtime. If dashboard code editor supports a self-contained JavaScript Worker script, generate one with UI and API handlers in a way that can be pasted and deployed from the dashboard. Do not require npm install/build in that route.
+
+If the official Cloudflare Speedtest package cannot be used without bundling, do not silently replace it with fake data. State the limitation. Offer a real build-required deployment route.
+
+Cloudflare Free plan limits to explain:
+- Cloudflare Workers free tier currently documents 100,000 requests/day, with other CPU, memory, subrequest and bundle limits; verify latest official docs before deployment.
+- Pages Free currently documents 500 builds/month and 20-minute build timeout; verify latest official docs.
+- These are usage limits, not unlimited resources.
+- Do not promise that high traffic or all third-party API usage will remain free.
+
+Important deployment distinction:
+- Cloudflare Pages can deploy prebuilt assets, Git-connected builds or CLI tooling. Pages Functions can handle server-side functionality.
+- The dashboard uploader rejected the source ZIP because it needs a build and contains TypeScript.
+- Do not tell me to upload the unbuilt source ZIP again.
+- If using Wrangler is necessary, explain it as the official deployment route, but first see if a dashboard-only Worker editor path is feasible.
+- Do not use GitHub or Termux by default. Ask before introducing them.
+- Do not overwrite `square-thunder-0bf2` or `crazyallineone12`.
+- Prefer new Worker name `crazyopenplace` if available.
+
+Potential no-GitHub options to investigate:
+1. Create a new Worker in Cloudflare dashboard, use its built-in code editor, paste a single self-contained JavaScript Worker implementation, deploy.
+2. If static assets must be bundled, use a Cloudflare-supported browser upload method for already-built assets only; do not claim the dashboard will compile TypeScript.
+3. If no browser-only method can build the existing project, state clearly that the current ZIP needs build tooling and offer the least difficult safe path. Do not hide the need for a build step.
+
+======================================================================
+PART 10 — IMPLEMENTATION TASK FOR THE NEW AI AGENT
+======================================================================
+
+You are the senior full-stack engineer. You must first inspect the attached ZIP, not assume it matches this description perfectly.
+
+STEP A — AUDIT:
+1. List all source files and routes.
+2. Inspect complete GameSkinbo service implementation and auth method.
+3. Inspect existing React pages and route definitions.
+4. Inspect provider configuration and current prices.
+5. Inspect Cloudflare speed test integration.
+6. Identify dependencies incompatible with Cloudflare Workers.
+7. Identify all required secrets.
+8. Report whether a browser-only Cloudflare dashboard deployment is genuinely possible.
+
+STEP B — CHOOSE THE CORRECT IMPLEMENTATION:
+Preferred implementation is Cloudflare-native and deployable without a paid plan, credit card, GitHub or Termux, if technically feasible.
+If impossible, explain the exact blocker before proposing alternatives.
+Do not make the project static-only if that breaks UID or Observatory APIs.
+Do not ship an Express server expecting Cloudflare Worker runtime to run it unchanged.
+
+STEP C — BUILD:
+Produce the complete working implementation:
+- UI pages and navigation.
+- UID API proxy.
+- Cloudflare Observatory API proxy.
+- Real Cloudflare public speed test.
+- Guild Glory external provider catalog.
+- Safety/About/Contact/Thank-you pages.
+- Responsive design.
+- Error/loading/empty states.
+- Secure secrets configuration.
+- Deployment instructions for Cloudflare dashboard.
+If a dashboard Worker editor route is used, output the complete paste-ready Worker JavaScript and any additional file contents needed. Do not output fragments with “continue similarly” or missing code.
+
+STEP D — TEST:
+Test:
+- Root page loads.
+- Every route loads directly and refreshes.
+- UID endpoint rejects invalid input.
+- UID endpoint returns actual upstream data only with valid API key.
+- Missing key gives honest configured=false/error state.
+- Rate limit works.
+- API key never appears in browser source or responses.
+- Observatory endpoint returns real Cloudflare test history only.
+- Speed test uses actual Cloudflare measurements, not random values.
+- Provider links exactly match allowlist.
+- Provider links open the exact product pages.
+- No fake prices/payment methods/payment-success.
+- Thank-you page clearly says it is not proof of payment.
+- Mobile layout works.
+- Existing Cloudflare Worker/database are not overwritten.
+
+STEP E — DELIVERY:
+Give me:
+1. Complete finished source code / paste-ready Worker code.
+2. Exact file list and what changed.
+3. Exact steps to create the new Worker in Cloudflare dashboard on Android.
+4. Exact steps to set secrets securely.
+5. Exact steps to deploy without billing.
+6. Expected free URL format.
+7. Known free-tier limits.
+8. A short test checklist.
+9. Clear explanation if any requirement cannot be achieved for free.
+
+Do not tell me “it should work” without tests. Do not claim a deployment succeeded unless the platform confirms it.
+
+======================================================================
+PART 11 — MESSAGE TO THE NEW AI (READ AND FOLLOW)
+======================================================================
+
+I am attaching my existing CrazyOpenPlace project ZIP and this handoff file.
+
+Read this entire handoff and inspect the ZIP completely before coding. I am a beginner and need a real working solution, not a mockup.
+
+My Google AI Studio project preview already exists, but Google publishing is blocked by Starter Tier eligibility. I cannot add a credit card or pay for a subscription. I have a Cloudflare account and dashboard access. The Cloudflare simple uploader rejected my source ZIP because it contains TypeScript and requires a build process.
+
+Build or migrate CrazyOpenPlace so it can be hosted on Cloudflare's free plan without a builder watermark. Prefer a browser-only Cloudflare dashboard workflow and do not require GitHub or Termux unless there is no technically valid alternative. Do not overwrite my existing Worker `square-thunder-0bf2` or D1 database `crazyallineone12`.
+
+Preserve all the actual services and requirements in this file:
+1. Real GameSkinbo Free Fire UID Checker using my API key stored securely server-side.
+2. Real Cloudflare public speed test with genuine measurements.
+3. Cloudflare Observatory Website Speed Analyzer using my Cloudflare API token and Zone ID stored securely server-side.
+4. Guild Glory provider catalog with external product-specific purchase links only; no fake supplier API, no payment collection, no payment confirmation, no tracking and no manual approval.
+5. All pages, sidebar, Facebook contact, About, Safety, Free Services, Thank You and responsive clean design.
+6. No login/signup.
+7. No fake data, fake prices, fake verification, fake payment success, or random values.
+8. No builder watermark.
+9. Free hosting subdomain is acceptable.
+10. No paid billing or credit card.
+
+IMPORTANT TECHNICAL REQUIREMENT:
+Do not upload the unbuilt TypeScript/React ZIP through Cloudflare's simple uploader again. It has already failed. Do not claim the existing Express server runs natively on Cloudflare Workers. Choose a valid architecture. If a single self-contained Worker script can be deployed from the Cloudflare dashboard editor, generate that complete script. If a build is required, explain exactly why and the simplest free way to do it before proceeding.
+
+First reply with a concise audit of the ZIP, the chosen architecture, and whether it can truly be deployed with no card, no subscription, no GitHub and no Termux. Then implement the complete solution. Do not start by asking questions whose answers are already in this handoff. Ask only if a genuinely essential secret or decision is missing.
+
+======================================================================
+PART 12 — RESEARCH REFERENCES AND EVIDENCE
+======================================================================
+
+Use official docs first. Pricing, quotas and free plan conditions change; re-check before making a current claim.
+
+Google:
+- Google Cloud Starter Tier overview:
+  https://docs.cloud.google.com/docs/starter-tier
+- Google AI Studio deployment:
+  https://ai.google.dev/gemini-api/docs/aistudio-deploying
+- Google AI Studio Starter Tier explanation:
+  https://cloud.google.com/blog/topics/developers-practitioners/the-starter-tier-for-google-ai-studio-explained
+- Google AI Developers Forum discussion on Starter Tier eligibility:
+  https://discuss.ai.google.dev/t/about-publishing-app/181198
+
+Cloudflare:
+- Workers limits:
+  https://developers.cloudflare.com/workers/platform/limits/
+- Pages limits:
+  https://developers.cloudflare.com/pages/platform/limits/
+- Pages overview / deployment methods:
+  https://developers.cloudflare.com/pages/
+- Cloudflare Workers:
+  https://developers.cloudflare.com/workers/
+- Cloudflare D1:
+  https://developers.cloudflare.com/d1/
+- Cloudflare Speed Test:
+  https://speed.cloudflare.com/
+- Cloudflare speedtest package:
+  https://github.com/cloudflare/speedtest
+
+Research notes:
+- Google Starter Tier is a no-cost Google-managed project for eligible accounts; eligibility includes personal account, no paid Cloud Billing history, sufficient activity and supported territory. Eligibility is automated. Google AI Studio support cannot manually override it.
+- Google AI Studio standard deployment to Cloud Run requires billing to be linked; the Starter Tier is the no-billing option for eligible accounts.
+- Cloudflare Workers and Pages have free plan limits; verify the latest published quotas before deploying.
+- Cloudflare Pages supports Git-connected builds, direct upload of prebuilt assets and command-line tooling. Direct upload of an unbuilt TypeScript project is not equivalent to a build system.
+- Third-party comparisons and social/community discussions are useful for user experience, but do not override official pricing/limits. Treat Reddit/forum anecdotes as anecdotal and verify claims against official docs.
+- A recent third-party free-builder comparison notes that free AI builders commonly limit AI credits, use vendor subdomains, include branding, or restrict code export. This supports preferring independent code plus Cloudflare hosting, but verify each vendor's current terms:
+  https://hakuto.dev/blog/free-ai-website-builder/
+  https://bootstrap.build/articles/free-ai-website-builders/
+
+Do not spend time collecting huge numbers of low-quality posts just to say “whole internet searched”. Focus on authoritative docs, actual product behavior, and relevant user reports. State uncertainty honestly.
+
+======================================================================
+FINAL ACCEPTANCE CRITERIA
+======================================================================
+
+The task is complete only when:
+- A real public CrazyOpenPlace URL is deployed and accessible.
+- Deployment did not require a credit card or paid subscription.
+- No forced AI-builder watermark appears.
+- Existing services work with real APIs and secure secrets.
+- Speed test uses genuine measurements.
+- Guild Glory links work as external provider destinations with honest disclaimers.
+- All required pages work on mobile.
+- No fake or placeholder data is presented as real.
+- Existing Cloudflare Worker and D1 database were not damaged.
+- The new AI provides reproducible deployment steps and confirms actual tests.
+
+If any of these cannot be achieved under the free plan or browser-only restriction, identify exactly which requirement is blocked and why. Never hide the limitation or claim success without proof.

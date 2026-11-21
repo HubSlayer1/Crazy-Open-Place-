@@ -1,0 +1,8 @@
+{
+  "name": "CrazyOpenPlace — Free Fire Utilities, Speed Test & Guild Glory Catalog",
+  "description": "CrazyOpenPlace: clean near-black cyber utility hub offering Free Fire UID lookup via GameSkinbo, real Cloudflare Speed Test diagnostics, Website Speed Analyzer, and external Guild Glory provider links with zero login or payment collection.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,1906 @@
+# CRAZY.ORG ALL IN ONE — COMPLETE PRODUCTION REBUILD OF BACKEND, FIREBASE REMOVAL & PREMIUM CYBER UI REDESIGN
+
+## ROLE
+
+Act as a senior full-stack software engineer, Cloudflare Workers and D1 architect, Node.js backend engineer, database migration specialist, security engineer, UI/UX designer and production QA engineer.
+
+You have full responsibility for upgrading my EXISTING Crazy.Org All in One website.
+
+I want you to inspect the existing code, implement the actual system, write all required code files, migrate the database, redesign the interface, run tests, fix errors and prepare the application for deployment.
+
+This is NOT a request to create a prototype or another demonstration.
+
+I want a genuinely working application.
+
+Do not just return explanations or instructions.
+
+Write and integrate the actual source code.
+
+==================================================
+01. PROJECT IDENTITY AND NON-NEGOTIABLE REQUIREMENTS
+==================================================
+
+Project name: Crazy.Org All in One
+
+Existing website:
+https://crazylimitedorg.ai.studio/
+
+Current development platform:
+Google AI Studio Build Mode.
+
+Current application architecture:
+Existing React frontend + Node.js backend + server.ts.
+
+MAIN REQUIREMENT:
+
+Completely remove Firebase from the ACTIVE application and replace it with Cloudflare D1 + Cloudflare Workers Free Tier.
+
+Keep my existing Google AI Studio application hosting and existing public website domain.
+
+Use the existing Node.js server as the backend gateway.
+
+New architecture:
+
+CUSTOMER BROWSER
+       |
+       v
+CRAZY.ORG REACT FRONTEND
+       |
+       v
+EXISTING NODE.JS BACKEND
+       |
+       | Secure server-to-server HMAC
+       v
+CLOUDFLARE WORKER
+       |
+       v
+CLOUDFLARE D1 DATABASE
+
+IMPORTANT:
+- The browser must never communicate directly with D1.
+- The browser must never receive Cloudflare secrets.
+- The Worker must reject unsigned or invalid internal requests.
+- Keep all customer requests on my existing website's same origin.
+- No unnecessary cross-origin browser API calls.
+- No paid Firebase.
+- No Firebase Authentication.
+- No Firestore.
+- No Firebase Storage.
+- No fake features.
+- No fake payments.
+- No fabricated service results.
+- No paid subscriptions.
+- No automatic billing upgrades.
+
+==================================================
+02. FIRST: INSPECT THE ENTIRE EXISTING PROJECT
+==================================================
+
+Before editing:
+
+Inspect:
+- package.json.
+- server.ts.
+- All backend routes.
+- All React pages.
+- All components.
+- All existing hooks.
+- Existing authentication.
+- Existing database operations.
+- Existing product configuration.
+- Existing admin console.
+- Existing styles.
+- Existing deployment configuration.
+- Existing environment variables.
+- Existing utility implementations.
+
+Identify every Firebase dependency and every place where data is read or written.
+
+Understand how existing features work.
+
+Create an implementation plan internally, then proceed with the actual changes.
+
+Preserve all existing business logic unless it needs to be replaced because of Firebase removal or a genuine bug.
+
+Do not delete working functionality merely to simplify migration.
+
+==================================================
+03. COMPLETE FIREBASE REMOVAL
+==================================================
+
+Remove Firebase from the final ACTIVE application.
+
+Remove:
+- Firebase Web SDK.
+- Firebase Authentication.
+- Firebase Firestore.
+- Firebase Storage.
+- Firebase initialization.
+- Firebase authentication listeners.
+- Firebase login forms.
+- Firestore queries.
+- Firestore writes.
+- Firestore Security Rules dependencies.
+- Firebase-only runtime environment variables.
+- Firebase-dependent repository modules.
+- Unused Firebase packages.
+
+Search the entire project for:
+
+firebase
+firebase/app
+firebase/auth
+firebase/firestore
+firebase/storage
+initializeApp
+getFirestore
+getAuth
+onAuthStateChanged
+signInWithPopup
+signInAnonymously
+createUserWithEmailAndPassword
+getDoc
+getDocs
+setDoc
+addDoc
+updateDoc
+deleteDoc
+
+Review every match.
+
+Remove active dependencies rather than merely hiding the Firebase interface.
+
+IMPORTANT:
+Preserve the Firebase project as an offline backup during migration. Do not delete the project itself.
+
+No Firebase service should remain in the deployed runtime once migration has been successfully verified.
+
+==================================================
+04. CLOUDFLARE FREE ARCHITECTURE
+==================================================
+
+Use:
+
+- Cloudflare Workers Free.
+- Cloudflare D1 Free.
+- Existing Google AI Studio app hosting.
+- Existing Node.js backend.
+- Existing React frontend.
+
+Official references:
+
+https://developers.cloudflare.com/workers/
+https://developers.cloudflare.com/d1/
+https://developers.cloudflare.com/d1/get-started/
+https://developers.cloudflare.com/d1/worker-api/d1-database/
+https://developers.cloudflare.com/workers/configuration/secrets/
+
+DATABASE NAME:
+
+crazy-org-production
+
+WORKER NAME:
+
+crazy-org-d1-bridge
+
+D1 DATABASE:
+
+Single production database using SQLite-compatible D1 SQL.
+
+Do not introduce:
+- Firebase.
+- Supabase paid plans.
+- PlanetScale paid plans.
+- Neon paid plans.
+- Paid database hosting.
+- R2 uploads.
+- Paid object storage.
+- Paid authentication.
+- Paid API services.
+
+FREE PLAN LIMITS TO RESPECT:
+
+- D1: 5 million rows read per day.
+- D1: 100,000 rows written per day.
+- D1: 500 MB maximum per database.
+- D1: 5 GB total account storage.
+- Workers Free: 100,000 requests per day.
+- Workers Free: 10 ms CPU time per invocation.
+- D1: 50 read subrequests per Worker invocation on Free.
+
+These are usage limits, not unlimited capacity.
+
+Never automatically upgrade the account.
+
+If quotas are exceeded, handle errors gracefully and retain data.
+
+Do not pretend the platform has unlimited free usage.
+
+==================================================
+05. CLOUDFLARE WORKER — ACTUAL SOURCE CODE
+==================================================
+
+Create the following structure:
+
+cloudflare/
+  d1-worker/
+    wrangler.jsonc
+    package.json
+    tsconfig.json
+    src/
+      index.ts
+      auth.ts
+      handlers.ts
+      types.ts
+    migrations/
+      0001_initial.sql
+      0002_indexes.sql
+    README.md
+
+Create a valid deployable Wrangler configuration.
+
+FILE:
+cloudflare/d1-worker/wrangler.jsonc
+
+Use this configuration as the starting point:
+
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "crazy-org-d1-bridge",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-18",
+  "observability": {
+    "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "crazy-org-production",
+      "database_id": "REPLACE_WITH_REAL_CLOUDFLARE_DATABASE_ID",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "secrets": {
+    "required": ["APP_BRIDGE_SECRET"]
+  }
+}
+
+IMPORTANT:
+Do not leave the placeholder database ID in production.
+
+Use the real ID generated after creating the D1 database.
+
+Never place secret values in wrangler.jsonc.
+
+Create TypeScript types for the D1 binding.
+
+==================================================
+06. CLOUDFLARE D1 — COMPLETE SQL DATABASE
+==================================================
+
+Create the real SQL migration:
+
+cloudflare/d1-worker/migrations/0001_initial.sql
+
+Use proper SQLite-compatible SQL.
+
+Start with:
+
+PRAGMA foreign_keys = ON;
+
+Create the following tables:
+
+### schema_migrations
+- version
+- name
+- applied_at
+
+### products
+- id TEXT PRIMARY KEY
+- name TEXT NOT NULL
+- slug TEXT UNIQUE NOT NULL
+- description TEXT
+- active INTEGER NOT NULL DEFAULT 1
+- created_at TEXT NOT NULL
+- updated_at TEXT NOT NULL
+- legacy_payload_json TEXT
+
+### packages
+- id TEXT PRIMARY KEY
+- product_id TEXT
+- package_name TEXT NOT NULL
+- bot_quantity INTEGER NOT NULL
+- selling_price_minor INTEGER NOT NULL
+- currency TEXT NOT NULL DEFAULT 'BDT'
+- active INTEGER NOT NULL DEFAULT 1
+- display_order INTEGER DEFAULT 0
+- estimated_delivery TEXT
+- created_at TEXT NOT NULL
+- updated_at TEXT NOT NULL
+- legacy_payload_json TEXT
+
+### storefront_settings
+- id TEXT PRIMARY KEY
+- provider_name TEXT
+- provider_url TEXT
+- service_enabled INTEGER DEFAULT 1
+- public_payment_instructions TEXT
+- public_contact_information TEXT
+- updated_at TEXT NOT NULL
+
+### orders
+- id TEXT PRIMARY KEY
+- order_reference TEXT UNIQUE NOT NULL
+- package_id TEXT
+- customer_type TEXT NOT NULL DEFAULT 'guest'
+- legacy_customer_uid TEXT
+- customer_phone TEXT
+- guild_id TEXT NOT NULL
+- guild_name TEXT
+- region TEXT NOT NULL
+- quantity INTEGER NOT NULL DEFAULT 1
+- selling_price_minor INTEGER NOT NULL
+- currency TEXT NOT NULL DEFAULT 'BDT'
+- payment_status TEXT NOT NULL
+- service_status TEXT NOT NULL
+- tracking_token_hash TEXT UNIQUE NOT NULL
+- package_snapshot_json TEXT NOT NULL
+- created_at TEXT NOT NULL
+- updated_at TEXT NOT NULL
+- legacy_payload_json TEXT
+
+### order_timeline
+- id TEXT PRIMARY KEY
+- order_id TEXT NOT NULL
+- previous_status TEXT
+- new_status TEXT NOT NULL
+- actor_type TEXT NOT NULL
+- public_message TEXT
+- admin_note TEXT
+- created_at TEXT NOT NULL
+- legacy_payload_json TEXT
+
+### provider_transactions
+- id TEXT PRIMARY KEY
+- order_id TEXT NOT NULL
+- provider_name TEXT NOT NULL
+- provider_transaction_id TEXT NOT NULL
+- provider_reference TEXT
+- amount_minor INTEGER
+- currency TEXT
+- verification_status TEXT NOT NULL
+- verified_at TEXT
+- created_at TEXT NOT NULL
+
+### provider_tx_locks
+- transaction_hash TEXT PRIMARY KEY
+- order_id TEXT NOT NULL
+- created_at TEXT NOT NULL
+
+### activations
+- id TEXT PRIMARY KEY
+- order_id TEXT NOT NULL
+- provider_group_id TEXT
+- activation_status TEXT NOT NULL
+- verified_at TEXT
+- created_at TEXT NOT NULL
+
+### redeem_codes
+- id TEXT PRIMARY KEY
+- code_hash TEXT UNIQUE NOT NULL
+- encrypted_code TEXT NOT NULL
+- assigned_order_id TEXT UNIQUE
+- status TEXT NOT NULL
+- created_at TEXT NOT NULL
+
+### refunds
+- id TEXT PRIMARY KEY
+- order_id TEXT NOT NULL
+- refund_type TEXT NOT NULL
+- reason TEXT
+- amount_minor INTEGER
+- currency TEXT DEFAULT 'BDT'
+- provider_reference TEXT
+- status TEXT NOT NULL
+- created_at TEXT NOT NULL
+- updated_at TEXT NOT NULL
+
+### refund_history
+- id TEXT PRIMARY KEY
+- refund_id TEXT NOT NULL
+- action TEXT NOT NULL
+- note TEXT
+- actor_type TEXT
+- created_at TEXT NOT NULL
+
+### support_tickets
+- id TEXT PRIMARY KEY
+- order_id TEXT
+- tracking_reference TEXT
+- subject TEXT NOT NULL
+- message TEXT NOT NULL
+- status TEXT NOT NULL
+- created_at TEXT NOT NULL
+- updated_at TEXT NOT NULL
+
+### support_replies
+- id TEXT PRIMARY KEY
+- ticket_id TEXT NOT NULL
+- message TEXT NOT NULL
+- actor_type TEXT NOT NULL
+- created_at TEXT NOT NULL
+
+### contact_messages
+- id TEXT PRIMARY KEY
+- name TEXT
+- contact TEXT
+- message TEXT NOT NULL
+- status TEXT NOT NULL
+- created_at TEXT NOT NULL
+
+### admin_sessions
+- id TEXT PRIMARY KEY
+- token_hash TEXT UNIQUE NOT NULL
+- csrf_hash TEXT NOT NULL
+- created_at TEXT NOT NULL
+- expires_at TEXT NOT NULL
+- revoked_at TEXT
+
+### admin_login_attempts
+- id TEXT PRIMARY KEY
+- identity_hash TEXT NOT NULL
+- attempted_at TEXT NOT NULL
+- successful INTEGER NOT NULL DEFAULT 0
+
+### admin_action_logs
+- id TEXT PRIMARY KEY
+- action TEXT NOT NULL
+- target_type TEXT
+- target_id TEXT
+- note TEXT
+- administrator TEXT NOT NULL
+- created_at TEXT NOT NULL
+
+### speed_tests
+- id TEXT PRIMARY KEY
+- legacy_customer_ref TEXT
+- result_json TEXT NOT NULL
+- created_at TEXT NOT NULL
+
+### uid_lookups
+- id TEXT PRIMARY KEY
+- legacy_customer_ref TEXT
+- lookup_result_json TEXT NOT NULL
+- created_at TEXT NOT NULL
+
+### legacy_records
+- id TEXT PRIMARY KEY
+- collection_name TEXT NOT NULL
+- document_path TEXT NOT NULL UNIQUE
+- data_json TEXT NOT NULL
+- imported_at TEXT NOT NULL
+
+### idempotency_keys
+- id TEXT PRIMARY KEY
+- operation TEXT NOT NULL
+- idempotency_key TEXT NOT NULL
+- response_json TEXT
+- created_at TEXT NOT NULL
+- UNIQUE(operation, idempotency_key)
+
+Add foreign keys wherever valid.
+
+Add indexes for:
+- orders.order_reference
+- orders.payment_status
+- orders.service_status
+- orders.created_at
+- order_timeline.order_id
+- provider_transactions.order_id
+- provider_transactions.provider_transaction_id
+- refunds.order_id
+- support_tickets.order_id
+- packages.active
+- products.slug
+- admin_sessions.token_hash
+- tracking_token_hash
+
+Use appropriate indexes and uniqueness constraints to reduce D1 row scans.
+
+Do not store customer tracking secrets or administrator passwords in plaintext.
+
+Store prices as integer minor currency units rather than floating-point numbers.
+
+Ensure all migration SQL can actually execute against D1.
+
+==================================================
+07. SECURE NODE-TO-WORKER CONNECTION
+==================================================
+
+My existing Node.js server must be the only application component calling the D1 Worker.
+
+The existing backend must communicate with Cloudflare Worker over HTTPS.
+
+Create:
+
+src/server/services/d1Bridge.ts
+
+Implement authenticated requests using HMAC-SHA256.
+
+The application environment variables:
+
+D1_WORKER_URL
+D1_BRIDGE_SECRET
+
+Cloudflare Worker secret:
+
+APP_BRIDGE_SECRET
+
+The values of D1_BRIDGE_SECRET and APP_BRIDGE_SECRET must be identical.
+
+Generate a high-entropy secret.
+
+Never ask me to paste it into public code.
+
+Use this Node.js signing pattern:
+
+```typescript
+import {
+  createHash,
+  createHmac,
+  randomBytes
+} from "node:crypto";
+
+export async function callD1Worker(
+  path: string,
+  payload: unknown
+) {
+  const workerUrl = process.env.D1_WORKER_URL;
+  const secret = process.env.D1_BRIDGE_SECRET;
+
+  if (!workerUrl || !secret) {
+    throw new Error("D1_BRIDGE_CONFIGURATION_MISSING");
+  }
+
+  const body = JSON.stringify(payload ?? {});
+  const timestamp = Date.now().toString();
+  const nonce = randomBytes(16).toString("hex");
+
+  const bodyHash = createHash("sha256")
+    .update(body)
+    .digest("hex");
+
+  const canonical = [
+    timestamp,
+    nonce,
+    "POST",
+    path,
+    bodyHash
+  ].join("\n");
+
+  const signature = createHmac("sha256", secret)
+    .update(canonical)
+    .digest("hex");
+
+  const response = await fetch(new URL(path, workerUrl), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Bridge-Timestamp": timestamp,
+      "X-Bridge-Nonce": nonce,
+      "X-Bridge-Signature": signature
+    },
+    body
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`D1_BRIDGE_ERROR_${response.status}: ${errorText.slice(0, 500)}`);
+  }
+
+  return response.json();
+}
+```
+
+Adapt imports and error types to the actual project.
+
+Do not send D1_BRIDGE_SECRET to browser code.
+
+### Worker-side signature verification
+
+Create the matching verification function in:
+
+cloudflare/d1-worker/src/auth.ts
+
+Use Web Crypto:
+
+- SHA-256 the exact raw request body.
+- Import APP_BRIDGE_SECRET as an HMAC SHA-256 key.
+- Reconstruct the exact canonical message.
+- Verify signature using constant-time comparison.
+- Reject missing or invalid headers.
+- Reject timestamps older than 60 seconds.
+- Reject malformed nonces.
+- Accept only POST requests to protected internal routes.
+- Use idempotency keys for all write operations.
+- Never log secret values.
+
+The canonical message must exactly match the Node.js implementation:
+
+timestamp
+nonce
+HTTP method
+request path
+body hash
+
+The Worker must never expose generic SQL execution.
+
+It must expose only predefined database actions.
+
+Do not require browser CORS access to the Worker.
+
+All customer APIs remain same-origin on Crazy.Org.
+
+==================================================
+08. CLOUDFLARE WORKER — WORKING API
+==================================================
+
+Create:
+cloudflare/d1-worker/src/index.ts
+
+The Worker must have:
+
+1. Environment interface.
+2. D1Database binding.
+3. Secure request verification.
+4. JSON request validation.
+5. Standard JSON responses.
+6. Correct HTTP status codes.
+7. Error handling.
+8. Fixed action dispatcher.
+9. D1 prepared statements.
+10. Transaction-safe batch operations.
+
+Implement:
+
+GET /health
+
+Protected internal operations:
+
+POST /internal/v1/dispatch
+
+Supported actions:
+
+storefront.get
+packages.list
+order.create
+order.get
+order.timeline.list
+order.payment.submit
+order.activation.submit
+order.refund.create
+order.support.create
+track.lookup
+admin.session.create
+admin.session.validate
+admin.session.revoke
+admin.dashboard
+admin.orders.list
+admin.payment.verify
+admin.order.update
+admin.packages.create
+admin.packages.update
+admin.packages.delete
+admin.settings.update
+admin.refunds.update
+admin.redeem.create
+admin.redeem.assign
+admin.support.reply
+admin.audit.list
+migration.import.batch
+migration.verify.counts
+
+Implement every action with real D1 operations.
+
+Do not create fake responses.
+
+Do not return hardcoded package records.
+
+Do not store application data in Worker memory.
+
+Use:
+
+```typescript
+const result = await env.DB
+  .prepare("SELECT * FROM packages WHERE active = 1 ORDER BY display_order ASC")
+  .all();
+```
+
+Use parameterized statements:
+
+```typescript
+const result = await env.DB
+  .prepare("SELECT * FROM orders WHERE order_reference = ? LIMIT 1")
+  .bind(orderReference)
+  .first();
+```
+
+Use D1 batch for logically related writes.
+
+Do not concatenate user values into SQL.
+
+Do not accept arbitrary SQL from the browser or Node API.
+
+==================================================
+09. NODE.JS BACKEND ROUTES
+==================================================
+
+Preserve my existing server.ts and API structure.
+
+Create or adapt:
+
+src/server/services/d1Bridge.ts
+src/server/services/orderService.ts
+src/server/services/trackingService.ts
+src/server/services/adminService.ts
+src/server/services/packageService.ts
+src/server/services/providerService.ts
+
+Implement same-origin routes:
+
+PUBLIC:
+
+GET /api/health
+GET /api/storefront
+GET /api/packages
+POST /api/orders
+POST /api/track-order
+POST /api/orders/:orderId/payment-reference
+POST /api/orders/:orderId/activation
+POST /api/orders/:orderId/refund-request
+POST /api/orders/:orderId/support
+
+ADMIN:
+
+POST /api/admin/login
+POST /api/admin/logout
+GET /api/admin/session
+GET /api/admin/dashboard
+GET /api/admin/orders
+POST /api/admin/orders/verify-payment
+POST /api/admin/orders/update-status
+POST /api/admin/packages
+PUT /api/admin/packages/:packageId
+DELETE /api/admin/packages/:packageId
+POST /api/admin/settings
+POST /api/admin/redeem-codes
+POST /api/admin/redeem-codes/assign
+POST /api/admin/refunds
+POST /api/admin/support/reply
+GET /api/admin/audit
+
+All customer and administrator routes must use real database records.
+
+==================================================
+10. CUSTOMER AUTHENTICATION — NO FIREBASE, NO GMAIL
+==================================================
+
+Remove compulsory customer registration and Google login.
+
+My preferred customer experience:
+
+NO CUSTOMER ACCOUNT REQUIRED.
+
+Use guest checkout.
+
+Customers can:
+- Browse.
+- Select products.
+- Enter Guild ID.
+- Select region.
+- Enter WhatsApp contact optionally.
+- Create orders.
+- Receive tracking credentials.
+- Track orders from any device.
+- Submit provider payment references.
+- Request refunds.
+- Contact support.
+
+Do not require:
+- Gmail.
+- Email address.
+- Google Sign-In.
+- Password.
+- SMS OTP.
+- Paid authentication service.
+
+The old Firebase user records must be preserved as legacy records, not treated as active login accounts.
+
+==================================================
+11. SECURE ORDER TRACKING CODE
+==================================================
+
+Use Node.js cryptographic randomness.
+
+Generate:
+
+Order number:
+SER-YYYYMMDD-XXXX
+
+Private tracking code:
+A separate secure 256-bit random token.
+
+Example format:
+
+XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX
+
+The example above is not a fixed token.
+
+Create actual random values using:
+
+```typescript
+import { randomBytes, createHmac } from "node:crypto";
+
+const trackingToken = randomBytes(32).toString("base64url");
+
+const trackingHash = createHmac(
+  "sha256",
+  process.env.TRACKING_CODE_PEPPER!
+)
+  .update(`${orderId}:${trackingToken}`)
+  .digest("hex");
+```
+
+Store only trackingHash.
+
+NEVER store the original tracking token in the database.
+
+Show the tracking code to the customer once after order creation.
+
+Buttons:
+- Copy Order Number.
+- Copy Tracking Code.
+- Save Tracking Details.
+- Track Order.
+
+Use the private tracking code as the credential for:
+- Order status.
+- Public timeline.
+- Payment-reference submission.
+- Activation submission.
+- Refund requests.
+
+Rate-limit tracking attempts.
+
+Never allow access using an order number alone.
+
+Never return private payment information through public tracking.
+
+==================================================
+12. ADMIN AUTHENTICATION
+==================================================
+
+Create an independent administrator login.
+
+Do not use Firebase.
+
+Do not use Google Sign-In.
+
+Use server-side environment secrets:
+
+ADMIN_USERNAME
+ADMIN_PASSWORD
+SESSION_SECRET
+D1_WORKER_URL
+D1_BRIDGE_SECRET
+TRACKING_CODE_PEPPER
+
+Keep values exclusively in the existing hosting secret manager or Cloudflare Worker secret manager.
+
+Admin password:
+- Never put in source code.
+- Never return through an API.
+- Never store in plaintext in D1.
+- Verify with Node.js scrypt.
+- Use timingSafeEqual.
+- Apply login rate limiting.
+
+Session:
+- Generate cryptographically random opaque session IDs.
+- Store only SHA-256 session-token hashes in D1.
+- Set HttpOnly cookies.
+- Secure cookies in production.
+- SameSite=Strict or Lax as appropriate.
+- Path=/.
+- Use appropriate expiration.
+- Support logout and session revocation.
+
+Protect every administrator API on the server.
+
+Public users must never access the Admin Console operations.
+
+Use a CSRF token and exact Origin validation on mutating admin requests.
+
+Never implement public administrator registration.
+
+==================================================
+13. MIGRATE THE FIREBASE DATA
+==================================================
+
+DO NOT DELETE THE OLD FIREBASE PROJECT.
+
+Before removal:
+
+Create a temporary, administrator-only migration tool.
+
+Current legacy source:
+
+Project:
+utopian-robot-8c70r
+
+Database:
+ai-studio-vespermonochrome-78076f70-ef38-4705-8de9-32670d1a65e9
+
+Existing collections:
+
+- users
+- guildPackages
+- guildSettings
+- orders
+- orders/{id}/timeline
+- providerTxLocks
+- refunds
+- refunds/{id}/history
+- redeemCodes
+- supportTickets
+- contactMessages
+- admins
+- adminActionLogs
+- speedTests
+- uidLookups
+
+Discover any additional collections.
+
+Export root documents and known nested subcollections.
+
+Use pagination.
+
+Preserve:
+- Original document IDs.
+- Original document paths.
+- Ownership references.
+- Timestamps.
+- Historical events.
+- Package prices.
+- Order states.
+- Provider references.
+- Refund histories.
+- Support conversations.
+- Settings.
+- Utility records.
+- Unknown legacy fields.
+
+Convert Firestore-specific values into a documented portable JSON format.
+
+Do not export Firebase authentication passwords or tokens.
+
+Create an administrator-only export archive.
+
+Add a Migration Center in the Admin Console.
+
+Show:
+- Source collection.
+- Total records.
+- Exported count.
+- Imported count.
+- Skipped count.
+- Failed count.
+- Checksum.
+- Migration timestamp.
+
+Import data in small batches, preferably 25–50 records per operation.
+
+Use idempotent inserts.
+
+Never overwrite newer D1 data with legacy records.
+
+Validate imported counts and key relationships.
+
+Do not migrate Firebase login sessions.
+
+Preserve old customer identifiers as legacy references.
+
+Because customers will no longer log in with Google, generate recovery tracking codes for historical orders.
+
+Store only their hashes in D1.
+
+Generate a separate one-time administrator-only recovery CSV containing the original order references and tracking codes.
+
+Never display that recovery file to public customers.
+
+Once data parity is verified, disconnect Firebase from the active application.
+
+Keep the migration export as a backup.
+
+==================================================
+14. FIRESTORE REPLACEMENT AND DATA INTEGRITY
+==================================================
+
+The replacement must cover ALL existing database functions.
+
+Do not migrate only the Guild Glory orders.
+
+Use D1 for:
+
+- Customer order records.
+- Packages.
+- Product configurations.
+- Provider settings.
+- Payment references.
+- Transaction locks.
+- Redeem codes.
+- Activations.
+- Order timelines.
+- Refund histories.
+- Support tickets.
+- Contact messages.
+- Admin sessions.
+- Admin audit records.
+- Speed-test history.
+- UID-check history.
+- Migration history.
+
+No active Firebase queries should remain.
+
+==================================================
+15. GUILD GLORY SERVICE
+==================================================
+
+Preserve the actual provider:
+
+https://www.ffglory.pro/
+
+Reference:
+https://kakutopup.com/topup/49/ff-guild-glory
+
+Do not purchase its paid API.
+
+Do not build fake bots.
+
+Do not scrape private provider endpoints.
+
+Do not invent payment checkout URLs.
+
+My website handles:
+- Storefront.
+- Package selection.
+- Guild information.
+- Order creation.
+- Customer tracking.
+- Provider instructions.
+- Payment reference submission.
+- Admin verification.
+
+FFGlory handles:
+- Its actual payment system.
+- Its credits.
+- Its actual group launching.
+- Its actual Glory processing.
+- Its own service status.
+
+Open the official provider in a separate browser tab.
+
+Keep the original Crazy.Org order page open.
+
+Customer workflow:
+
+1. Open Crazy.Org.
+2. Select Guild Glory.
+3. Select package.
+4. Enter Guild UID.
+5. Select region.
+6. Enter contact information.
+7. Review the order.
+8. Create the order.
+9. Receive order number and private tracking code.
+10. Continue to https://www.ffglory.pro/
+11. Complete the provider's real payment flow.
+12. Return to Crazy.Org.
+13. Submit provider transaction reference.
+14. Wait for real provider verification.
+15. Follow actual service activation instructions.
+16. Submit genuine provider group information if required.
+17. Track order status using private credentials.
+
+Never claim payment is successful without verification.
+
+Never fabricate Glory results.
+
+Never claim automatic activation when only manual activation is available.
+
+==================================================
+16. PAYMENT DISPLAY AND CHECKOUT
+==================================================
+
+Remove Firebase dependency from customer payment configuration.
+
+Read safe storefront settings through D1.
+
+The official provider URL must have a safe hardcoded fallback:
+
+https://www.ffglory.pro/
+
+This ensures the customer can always open the provider website even if optional settings cannot load.
+
+Display:
+
+- Internal order number.
+- Package.
+- Bot quantity.
+- Selling price.
+- Guild UID.
+- Region.
+- Provider information.
+- Payment instructions.
+- Continue to FFGlory button.
+- Copy order reference.
+- Return to order tracking.
+
+Do not invent:
+- bKash gateway integration.
+- Nagad gateway integration.
+- Binance payment confirmation.
+- Webhooks.
+- Return URLs.
+- Provider transaction IDs.
+
+Implement only genuinely supported provider payment functionality.
+
+==================================================
+17. FULL UI REDESIGN — PREMIUM CYBER, CLEAN AND EASY
+==================================================
+
+This is a MAJOR visual upgrade.
+
+Keep the Crazy.Org identity and all existing functionality.
+
+Completely improve the visual experience.
+
+DESIGN GOAL:
+
+Aesthetic.
+Cyber.
+Unique.
+Premium.
+Professional.
+Clean.
+Simple.
+Easy to understand for every user.
+
+Do not make the website look like an unreadable hacker terminal.
+
+Do not overuse neon effects, glitch animations, red glow or complicated technical labels.
+
+### COLOUR SYSTEM
+
+Use a refined dark cyber visual identity:
+
+Main background:
+#080B12
+
+Secondary background:
+#0F1520
+
+Card background:
+#141C29
+
+Primary accent:
+#EF4444
+
+Secondary accent:
+#38BDF8
+
+Primary text:
+#F8FAFC
+
+Secondary text:
+#A7B1C2
+
+Success:
+#22C55E
+
+Warning:
+#F59E0B
+
+Danger:
+#EF4444
+
+Use subtle borders and restrained shadows.
+
+Keep the interface clean and readable.
+
+Offer a light theme as well as dark theme.
+
+### TYPOGRAPHY
+
+Use:
+- Inter or a similar clean sans-serif for normal text.
+- JetBrains Mono only for IDs, technical references and codes.
+
+Do not use monospace fonts for entire paragraphs.
+
+Do not use extremely small text.
+
+### NAVIGATION
+
+Desktop:
+- Clean top navigation.
+- Collapsible sidebar where needed.
+- Clear labels and icons.
+- Account and support access.
+
+Mobile:
+- Compact header.
+- Easy navigation.
+- Large tap targets.
+- No horizontal scrolling.
+
+### HOMEPAGE
+
+Create:
+
+- Professional hero section.
+- Crazy.Org branding.
+- Search bar.
+- Clear gaming category.
+- Guild Glory product card.
+- Speed Test card.
+- Network Tools card.
+- UID Checker card.
+- Quick access links.
+- Service status.
+- Contact/support section.
+
+Do not create fake online-user counts or performance statistics.
+
+### GUILD GLORY PRODUCT PAGE
+
+Create premium package cards.
+
+Every card must clearly show:
+
+- Package name.
+- Bot quantity.
+- Price.
+- Main description.
+- Package selection.
+- Buy button.
+
+Use a simple visual hierarchy.
+
+### CHECKOUT DESIGN
+
+Use a visible progress indicator:
+
+STEP 1 — PACKAGE
+STEP 2 — DETAILS
+STEP 3 — REVIEW
+STEP 4 — PAYMENT
+STEP 5 — TRACKING
+
+Keep each step understandable.
+
+Use plain instructions.
+
+### PAYMENT PAGE
+
+Show a simple payment instruction panel.
+
+Prominent button:
+
+CONTINUE TO OFFICIAL PROVIDER
+
+Secondary button:
+
+COPY ORDER NUMBER
+
+Show a clear note:
+
+"Payment is processed through the external provider. Your order will update after verification."
+
+### TRACKING PAGE
+
+Design a premium, simple order tracker.
+
+Fields:
+
+Order Number
+Private Tracking Code
+
+Button:
+
+TRACK MY ORDER
+
+Use clear status cards and timelines.
+
+### ADMIN CONSOLE
+
+Make the admin dashboard look like a professional SaaS control panel.
+
+Use:
+- Clear overview cards.
+- Searchable tables.
+- Filters.
+- Simple forms.
+- Confirmation dialogs.
+- Status indicators.
+- Responsive panels.
+- Clear error messages.
+
+Avoid overcrowding the screen.
+
+### ACCESSIBILITY
+
+Follow WCAG 2.2 AA principles.
+
+- High contrast.
+- Clear button labels.
+- Visible keyboard focus.
+- Keyboard navigation.
+- Form labels.
+- Accessible error messages.
+- Minimum comfortable touch target of approximately 44px.
+- Respect prefers-reduced-motion.
+- Do not rely on colour alone to convey status.
+
+Make it comfortable for beginners and experienced users.
+
+==================================================
+18. KEEP ALL EXISTING UTILITIES
+==================================================
+
+Do not remove or break these:
+
+1. Speed Test.
+2. Free Fire UID Checker.
+3. Network Info.
+4. Network Quality.
+5. History.
+6. Appearance.
+7. Settings.
+8. Contact.
+9. Info.
+
+Use D1 for their persistent history where appropriate.
+
+Keep the existing Cloudflare Speed Test integration.
+
+Keep the existing Free Fire UID Checker.
+
+FREEFIRE_API_KEY is independent of Firebase.
+
+Preserve it if the existing UID Checker needs it.
+
+If the UID Checker requires an external provider key, display a clear unavailable message when that key is absent.
+
+Do not make it necessary for Guild Glory purchases.
+
+==================================================
+19. FILE STRUCTURE
+==================================================
+
+Create an organized codebase without unnecessarily changing the existing structure.
+
+Recommended additions:
+
+cloudflare/d1-worker/wrangler.jsonc
+cloudflare/d1-worker/package.json
+cloudflare/d1-worker/tsconfig.json
+cloudflare/d1-worker/src/index.ts
+cloudflare/d1-worker/src/auth.ts
+cloudflare/d1-worker/src/handlers.ts
+cloudflare/d1-worker/src/types.ts
+cloudflare/d1-worker/migrations/0001_initial.sql
+cloudflare/d1-worker/migrations/0002_indexes.sql
+cloudflare/d1-worker/README.md
+
+src/server/services/d1Bridge.ts
+src/server/services/orderService.ts
+src/server/services/trackingService.ts
+src/server/services/adminService.ts
+src/server/services/packageService.ts
+src/server/services/providerService.ts
+
+src/server/routes/orders.ts
+src/server/routes/tracking.ts
+src/server/routes/admin.ts
+src/server/routes/storefront.ts
+
+src/server/auth/adminAuth.ts
+src/server/auth/csrf.ts
+
+migration/
+  legacyExport.ts
+  legacyImport.ts
+  migrationValidation.ts
+
+Create additional files only when they fit the existing architecture.
+
+Do not create unused duplicate modules.
+
+==================================================
+20. CLOUDFLARE DEPLOYMENT COMMANDS
+==================================================
+
+Provide a working README with these commands.
+
+First authenticate:
+
+```bash
+npx wrangler login
+```
+
+Create D1:
+
+```bash
+npx wrangler d1 create crazy-org-production
+```
+
+Copy the real database_id into:
+
+cloudflare/d1-worker/wrangler.jsonc
+
+Apply migrations:
+
+```bash
+npx wrangler d1 migrations apply crazy-org-production --remote --config cloudflare/d1-worker/wrangler.jsonc
+```
+
+Set the Worker secret:
+
+```bash
+npx wrangler secret put APP_BRIDGE_SECRET --config cloudflare/d1-worker/wrangler.jsonc
+```
+
+Deploy Worker:
+
+```bash
+npx wrangler deploy --config cloudflare/d1-worker/wrangler.jsonc
+```
+
+These commands must be checked against the actual installed Wrangler version.
+
+Never claim deployment succeeded without actual deployment output.
+
+If the AI Studio environment cannot authenticate with Cloudflare, generate all source files and give me the exact remaining deployment steps.
+
+Do not ask me to share Cloudflare API tokens in chat.
+
+Use the Cloudflare account's secure Wrangler login flow.
+
+==================================================
+21. ENVIRONMENT SECRETS
+==================================================
+
+Required secrets:
+
+D1_WORKER_URL
+D1_BRIDGE_SECRET
+SESSION_SECRET
+TRACKING_CODE_PEPPER
+ADMIN_USERNAME
+ADMIN_PASSWORD
+
+Optional existing secret:
+
+FREEFIRE_API_KEY
+
+Cloudflare Worker secret:
+
+APP_BRIDGE_SECRET
+
+D1_BRIDGE_SECRET and APP_BRIDGE_SECRET must contain the same securely generated random secret.
+
+Generate fresh secrets using cryptographically secure randomness.
+
+Do not reuse the session secret previously shared in chat.
+
+Do not put secret values in:
+- Source files.
+- GitHub.
+- Frontend configuration.
+- HTML.
+- Browser localStorage.
+- Console logs.
+- Public APIs.
+
+Use Google AI Studio's server-side Secrets configuration for the existing Node backend.
+
+Use Cloudflare's Worker Secrets configuration for APP_BRIDGE_SECRET.
+
+==================================================
+22. PRODUCTION SAFETY AND DATA MIGRATION
+==================================================
+
+Do not switch production data sources prematurely.
+
+The correct migration order:
+
+PHASE 1:
+Export all existing Firestore records.
+
+PHASE 2:
+Create D1 schema.
+
+PHASE 3:
+Deploy and health-check the Worker.
+
+PHASE 4:
+Import legacy data in idempotent batches.
+
+PHASE 5:
+Compare source and destination record counts.
+
+PHASE 6:
+Verify relationships and historical timelines.
+
+PHASE 7:
+Test new D1 writes and reads.
+
+PHASE 8:
+Switch the Node.js repository to D1.
+
+PHASE 9:
+Verify customer checkout and admin workflows.
+
+PHASE 10:
+Remove Firebase from active source code.
+
+PHASE 11:
+Run the production build.
+
+PHASE 12:
+Deploy the updated application.
+
+PHASE 13:
+Test the actual public website.
+
+Never delete the Firebase backup during the migration.
+
+Do not claim complete migration if any collection is skipped or inaccessible.
+
+If source data exceeds the D1 Free database size limit, stop before importing and provide a precise report. Do not enable paid billing.
+
+==================================================
+23. COMPLETE TESTING
+==================================================
+
+Use local development and real remote testing.
+
+Do not test only the homepage.
+
+TEST A — DATABASE
+
+- Worker health.
+- D1 connection.
+- Create records.
+- Read records.
+- Update records.
+- Delete authorized records.
+- Persistence after Worker deployment.
+- Migration counts.
+- Unique constraints.
+
+TEST B — CUSTOMER
+
+- Browse.
+- Package selection.
+- Guest checkout.
+- Order generation.
+- Tracking code creation.
+- Tracking lookup.
+- Payment reference submission.
+- Activation submission.
+- Refund request.
+- Support request.
+
+TEST C — ADMIN
+
+- Admin login.
+- Wrong password rejection.
+- Session persistence.
+- Logout.
+- Unauthorized access.
+- Package CRUD.
+- Order verification.
+- Status updates.
+- Refund management.
+- Redeem-code vault.
+- Support replies.
+- Admin audit log.
+
+TEST D — SECURITY
+
+- SQL injection.
+- XSS.
+- CSRF.
+- Invalid tracking codes.
+- Brute-force rate limits.
+- Duplicate payment references.
+- Duplicate order submissions.
+- Unauthorized admin requests.
+- Exposed-secret scanning.
+- Private-record disclosure.
+- Cross-customer access.
+
+TEST E — EXISTING UTILITIES
+
+Test every existing utility after migration.
+
+TEST F — UI
+
+- Android screen width.
+- Mobile responsiveness.
+- Tablet layout.
+- Desktop layout.
+- Light theme.
+- Dark theme.
+- Form usability.
+- Readability.
+- Button functionality.
+- Navigation.
+- Accessibility.
+
+==================================================
+24. ERROR FIXING AND PRODUCTION BUILD
+==================================================
+
+Before deployment run:
+
+```bash
+npm install
+npm run build
+npx tsc --noEmit
+npm run lint
+```
+
+Run the project's actual available test commands.
+
+Create automated tests where none exist.
+
+Check:
+
+- Missing imports.
+- Invalid module paths.
+- Type mismatches.
+- Runtime errors.
+- Broken API endpoints.
+- Missing SQL tables.
+- Invalid SQL syntax.
+- Missing Worker bindings.
+- Missing environment variables.
+- Incorrect route transitions.
+- Mobile overflow.
+- Broken buttons.
+- Authentication issues.
+- Database migration failures.
+
+Fix all reproducible critical and high-priority issues.
+
+Do not hide errors with empty arrays or fake response objects.
+
+Do not report a successful build without running it.
+
+Do not report a successful deployment without receiving actual deployment confirmation.
+
+==================================================
+25. DEPLOYMENT AND COST CONTROL
+==================================================
+
+Maintain my existing Google AI Studio hosted application.
+
+Do not unnecessarily migrate my whole frontend to another hosting provider.
+
+Cloudflare Worker should provide the D1 database bridge.
+
+Keep all required functionality within available free quotas.
+
+Never:
+- Enable Cloud Billing automatically.
+- Upgrade to paid Cloudflare Workers.
+- Buy D1 add-ons.
+- Buy Firebase plans.
+- Buy payment gateway subscriptions.
+- Introduce paid storage.
+- Purchase FFGlory API credits.
+
+When a free quota is exceeded:
+- Return an accurate error.
+- Preserve existing records.
+- Prevent duplicate financial actions.
+- Tell the customer the service is temporarily unavailable.
+- Do not automatically upgrade or charge me.
+
+Monitor D1 rows_read, rows_written, database storage and Worker request totals.
+
+Use indexes and efficient queries.
+
+Do not run unnecessary full-table scans.
+
+==================================================
+26. FINAL ACCEPTANCE CHECKLIST
+==================================================
+
+The project is complete only when:
+
+[ ] Existing Crazy.Org website is preserved.
+[ ] New Cyber UI is implemented.
+[ ] Mobile interface is usable.
+[ ] Firebase is removed from the active runtime.
+[ ] D1 database is connected.
+[ ] Worker deployment is verified.
+[ ] Data migration is verified.
+[ ] Guest checkout works.
+[ ] Private tracking works.
+[ ] Admin authentication works.
+[ ] Admin sessions persist securely.
+[ ] Package management works.
+[ ] Orders are persistent.
+[ ] Payment references are persistent.
+[ ] FFGlory handoff works.
+[ ] Activation records work.
+[ ] Refund records work.
+[ ] Support system works.
+[ ] UID Checker remains functional.
+[ ] Speed Test remains functional.
+[ ] Network tools work.
+[ ] History works.
+[ ] No paid Firebase dependency.
+[ ] No paid Cloudflare dependency.
+[ ] No critical production errors.
+[ ] Production build succeeds.
+[ ] Actual live deployment is verified.
+
+==================================================
+27. FINAL REPORT
+==================================================
+
+After finishing, report:
+
+1. Files created.
+2. Files modified.
+3. Firebase modules removed.
+4. Database schema created.
+5. Actual D1 database name and ID.
+6. Actual Worker URL.
+7. Migration counts.
+8. Database verification.
+9. Admin authentication verification.
+10. Customer checkout verification.
+11. Order tracking verification.
+12. UI redesign completed.
+13. Existing utilities regression results.
+14. Build results.
+15. Security test results.
+16. Remaining manual deployment tasks.
+17. Final production readiness.
+
+Mark each feature:
+
+PASS
+FAIL
+NOT TESTED
+REQUIRES USER ACTION
+
+Never mark an untested feature as PASS.
+
+==================================================
+28. OFFICIAL TECHNICAL AND COMMUNITY REFERENCES
+==================================================
+
+Use current documentation and verify syntax before implementation.
+
+GOOGLE AI STUDIO:
+https://ai.google.dev/gemini-api/docs/aistudio-build-mode
+
+CLOUDFLARE WORKERS:
+https://developers.cloudflare.com/workers/
+
+CLOUDFLARE D1:
+https://developers.cloudflare.com/d1/
+
+D1 PRICING:
+https://developers.cloudflare.com/d1/platform/pricing/
+
+D1 LIMITS:
+https://developers.cloudflare.com/d1/platform/limits/
+
+D1 PREPARED STATEMENTS:
+https://developers.cloudflare.com/d1/worker-api/prepared-statements/
+
+D1 MIGRATION:
+https://developers.cloudflare.com/d1/best-practices/import-export-data/
+
+WORKER SECRETS:
+https://developers.cloudflare.com/workers/configuration/secrets/
+
+WORKER BEST PRACTICES:
+https://developers.cloudflare.com/workers/best-practices/workers-best-practices/
+
+COMMUNITY DISCUSSION:
+https://www.reddit.com/r/webdev/comments/1q698r5/is_cloudfares_d1_sqlite_good/
+
+COMMUNITY PRODUCTION EXPERIENCE:
+https://www.reddit.com/r/CloudFlare/comments/1w652y1/cloudflare_d1_writes_on_production/
+
+Use community experiences as practical context, not as proof of guaranteed reliability.
+
+Follow official Cloudflare documentation for actual implementation and current limits.
+
+==================================================
+FINAL COMMAND
+==================================================
+
+START WORKING ON MY EXISTING PROJECT NOW.
+
+INSPECT THE CODE.
+
+BACK UP THE OLD DATABASE.
+
+CREATE THE CLOUDFLARE D1 WORKER AND SQL SCHEMA.
+
+WRITE THE ACTUAL WORKER CODE.
+
+WRITE THE ACTUAL NODE.JS BRIDGE.
+
+MIGRATE EXISTING DATA SAFELY.
+
+REPLACE FIREBASE.
+
+IMPLEMENT GUEST CHECKOUT AND PRIVATE ORDER TRACKING.
+
+REPLACE THE OLD UI WITH A CLEAN, PROFESSIONAL, UNIQUE CYBER DESIGN.
+
+PRESERVE EVERY EXISTING UTILITY.
+
+TEST THE ENTIRE APPLICATION.
+
+FIX REPRODUCIBLE ERRORS.
+
+PREPARE THE PRODUCTION DEPLOYMENT.
+
+DO NOT STOP AFTER WRITING DOCUMENTATION.
+
+DO NOT GENERATE FAKE FUNCTIONALITY.
+
+DO NOT CLAIM DEPLOYMENT WITHOUT VERIFICATION.
+
+DO NOT ASK FOR UNNECESSARY CONFIRMATION.
+
+If access to my Cloudflare account is missing, finish the complete code and configuration first, then provide the exact minimum authorization and deployment steps I must personally perform.
+
+MY FINAL GOAL:
+
+CRAZY.ORG ALL IN ONE
+
+A COMPLETE, PROFESSIONAL, CYBER-AESTHETIC, EASY-TO-USE, FULLY FUNCTIONAL WEBSITE.
+
+NO ACTIVE FIREBASE.
+
+NO GMAIL CUSTOMER LOGIN.
+
+NO PAID DATABASE.
+
+NO PAID API FOR GUILD GLORY.
+
+NO FAKE DATA.
+
+NO BROKEN BUTTONS.
+
+NO LOST ORDERS.
+
+NO UNVERIFIED SUCCESS MESSAGES.
+
+MAXIMUM REAL FUNCTIONALITY WITHIN THE FREE PLANS.
+
+BUILD IT, TEST IT, VERIFY IT AND PREPARE IT FOR PUBLICATION.

@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "crazy-org-d1-bridge",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-01",
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "crazy-org-production",
+      "database_id": "REPLACE_WITH_REAL_CLOUDFLARE_DATABASE_ID",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": {
+    "ENVIRONMENT": "production",
+    "OFFICIAL_PROVIDER_URL": "https://www.ffglory.pro/"
+  }
+}
